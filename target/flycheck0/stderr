@@ -1,0 +1,12 @@
+    Updating crates.io index
+error: failed to select a version for `wasm-bindgen-futures`.
+    ... required by package `CPU_UI v0.1.0 (/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em)`
+versions that meet the requirements `^0.4.50` are: 0.4.50, 0.4.64, 0.4.63, 0.4.62, 0.4.61, 0.4.60, 0.4.59, 0.4.58, 0.4.57, 0.4.56, 0.4.55, 0.4.54, 0.4.53, 0.4.52, 0.4.51
+
+all possible versions conflict with previously selected packages.
+
+  previously selected package `wgpu v0.16.0`
+    ... which satisfies dependency `wgpu = "^0.16"` of package `pixels v0.13.0`
+    ... which satisfies dependency `pixels = "^0.13"` of package `CPU_UI v0.1.0 (/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em)`
+
+failed to select a version for `wasm-bindgen-futures` which could resolve this conflict
