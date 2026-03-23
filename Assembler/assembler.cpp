@@ -24,6 +24,8 @@ const int nOfLoadAndJump = 7;
 std::array<std::string, Instr_Size> Instruction_Set; //set of actual instrucions as they come from strings;
 std::map<std::string, std::bitset<8>> Instruction_Key; //actual hashmap of each instruction
 
+// Forward declarations
+void increment(std::bitset<8>& bits);
 
 
 //see ASM_Instructions.md for explainations
@@ -103,25 +105,74 @@ void increment(std::bitset<8>& bits){
 
 
 
-void assemble(const std::string& fileName, const std::string& fileContents){
+void assemble(const std::string& filePath){
     try{
-        //open file
+        std::ifstream inputFile(filePath);
+        if(!inputFile.is_open()){
+            throw std::runtime_error("Could not open file: " + filePath);
+        }
 
+        std::string instruction;
+        std::string outputFileName = filePath.substr(filePath.find_last_of("/\\") + 1);
+        outputFileName = outputFileName.substr(0, outputFileName.find_last_of("."));
+        std::ofstream outputFile(binDir + "/" + outputFileName + ".bin");
+
+        while(std::getline(inputFile, instruction)){
+            // Skip empty lines and comments
+            if(instruction.empty() || instruction[0] == '#') continue;
+
+            auto bitRepresentation = getNextInstruction(instruction);
+            outputFile << bitRepresentation << "\n";
+        }
+
+        inputFile.close();
+        outputFile.close();
     }catch(const std::exception& e){
-
+        std::cerr << "Error assembling file: " << e.what() << std::endl;
     }
 }
 
 
 
-std::vector<std::string> getAsmFiles(const std::string& asmDir, const std::string& binDir){
+std::vector<std::string> getAsmFiles(const std::string& asmDirPath, const std::string& binDirPath){
+    std::vector<std::string> files;
 
+    try{
+        if(!fs::exists(asmDirPath)){
+            throw std::runtime_error("Asm directory does not exist: " + asmDirPath);
+        }
+
+        for(const auto& entry : fs::directory_iterator(asmDirPath)){
+            if(entry.is_regular_file()){
+                std::string filename = entry.path().filename().string();
+                if(filename.substr(filename.find_last_of(".") + 1) == "asm"){
+                    files.push_back(entry.path().string());
+                }
+            }
+        }
+    }catch(const std::exception& e){
+        std::cerr << "Error reading Asm directory: " << e.what() << std::endl;
+    }
+
+    return files;
 }
 
 
 int main(){
+    defineInstructions(Instruction_Set);
+    defineMap(Instruction_Key);
+
+    // Create Bin directory if it doesn't exist
+    if(!fs::exists(binDir)){
+        fs::create_directory(binDir);
+    }
+
     auto asmFiles = getAsmFiles(asmDir, binDir); //get all files to assemble
 
+    for(const auto& file : asmFiles){
+        std::cout << "Assembling: " << file << std::endl;
+        assemble(file);
+    }
 
     return 0;
 }
