@@ -1,11 +1,9 @@
-// cpu.rs — CPU emulator scaffolding
 // Reads a binary file, decodes instructions per the ISA, and displays
 // each incoming byte alongside the decoded instruction.
 
 use std::fs;
 use std::env;
 
-// ─── Registers ───────────────────────────────────────────────────────────────
 
 struct Registers {
     r: [u8; 16], // R0 (always 0) through R11 (general purpose)
@@ -72,7 +70,7 @@ impl DecodedInstruction {
     }
 }
 
-// ─── CPU ─────────────────────────────────────────────────────────────────────
+// ─── CPU Struct. Is able to fetch the next instruction, from the CPU, see the fetch command
 
 struct Cpu {
     regs:    Registers,
@@ -101,7 +99,10 @@ impl Cpu {
         Some(byte)
     }
 
-    // Decode and execute one instruction, returning a DecodedInstruction for display
+    /**
+     *  Decode and execute one instruction, returning a DecodedInstruction for display
+     * takes in first byte, and if needed grabs the next.
+     */ 
     fn step(&mut self, binary: &[u8]) -> Option<DecodedInstruction> {
         if self.halted {
             return None;
@@ -119,7 +120,7 @@ impl Cpu {
                     0x01 => { self.halted = true; ("HALT", String::new()) },
                     0x02 => ("RETURN", String::from("pop PC off stack")),
                     0x03 => { self.flags.clear(); ("CLRFLAGS", String::new()) },
-                    _    => ("UNKNOWN", format!("op={:#04X}", op)),
+                    _    => ("UNKNOWN", format!("op={:#04X}", op)), //else, unknown command. This should be caught by the assembler
                 };
                 Some(DecodedInstruction {
                     raw_bytes: vec![byte1],
@@ -236,7 +237,7 @@ impl Cpu {
                 })
             }
 
-            // ── 3-byte instructions (top 2 bits = 10) ────────────────────────
+            // ── 3-byte instructions (if top 2 are 10, then we grab the next 2)
             0b10 => {
                 let byte2 = self.fetch(binary)?;
                 let byte3 = self.fetch(binary)?;
@@ -245,16 +246,16 @@ impl Cpu {
                 // lower 4 bits of byte2 are padding for LOADIMM
 
                 let (mnemonic, detail) = match op {
-                    0x00 => { // LOADIMM
+                    0x00 => { //LOADIMM
                         self.regs.set(r1, byte3);
                         self.flags.zero = byte3 == 0;
                         ("LOADIMM", format!("R{} = {:#04X}", r1, byte3))
                     }
-                    0x01 => { // JMP
+                    0x01 => { //JMP
                         self.pc = byte3;
                         ("JMP", format!("PC → {:#04X}", byte3))
                     }
-                    0x02 => { // JMPIF0
+                    0x02 => { //JMPIF0
                         if self.flags.zero { self.pc = byte3; }
                         ("JMPIF0", format!(
                             "zero={} → {}",
@@ -262,7 +263,7 @@ impl Cpu {
                             if self.flags.zero { format!("jump {:#04X}", byte3) } else { "no jump".into() }
                         ))
                     }
-                    0x03 => { // JMPIF!0
+                    0x03 => { //JMPIF!0
                         if !self.flags.zero { self.pc = byte3; }
                         ("JMPIF!0", format!(
                             "zero={} → {}",
@@ -270,10 +271,10 @@ impl Cpu {
                             if !self.flags.zero { format!("jump {:#04X}", byte3) } else { "no jump".into() }
                         ))
                     }
-                    0x04 => { // CALL  (push PC, jump — stub)
+                    0x04 => { //CALL  (push PC, jump — stub)
                         ("CALL", format!("addr={:#04X}  (stub)", byte3))
                     }
-                    0x05 => { // JMPIFCRRY
+                    0x05 => { //JMPIFCRRY
                         if self.flags.carry { self.pc = byte3; }
                         ("JMPIFCRRY", format!(
                             "carry={} → {}",
@@ -281,7 +282,7 @@ impl Cpu {
                             if self.flags.carry { format!("jump {:#04X}", byte3) } else { "no jump".into() }
                         ))
                     }
-                    0x07 => { // JMPIFAULT
+                    0x07 => { //JMPIFAULT
                         if self.flags.fault { self.pc = byte3; }
                         ("JMPIFAULT", format!(
                             "fault={} → {}",
@@ -299,7 +300,7 @@ impl Cpu {
                 })
             }
 
-            // top 2 bits = 11 is not defined in the ISA
+            //top 2 bits = 11 is not defined in the ISA
             _ => {
                 Some(DecodedInstruction {
                     raw_bytes: vec![byte1],
@@ -311,11 +312,12 @@ impl Cpu {
     }
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin");
+    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin"); //this should be the folder your binary is coming from
 
     let binary = fs::read(path).unwrap_or_else(|_| {
         // Fallback: a tiny hardcoded demo program so the scaffolding runs standalone
@@ -334,8 +336,10 @@ fn main() {
     println!("loaded {} bytes from '{}'", binary.len(), path);
     println!("{}", "─".repeat(52));
 
-    let mut cpu = Cpu::new();
 
+
+    let mut cpu = Cpu::new(); // create the CPU
+    let mut ram = RAM::new(); // and ram
     while !cpu.halted {
         let pc_before = cpu.pc;
         match cpu.step(&binary) {
@@ -350,7 +354,7 @@ fn main() {
     println!("{}", "─".repeat(52));
     println!("halted.  final register state:");
     for i in 0..=15 {
-        let label = match i {
+        let label = match i { //labels for CPUs
             0  => "R0  (zero)".to_string(),
             12 => "R12 (FP)  ".to_string(),
             13 => "R13 (SP)  ".to_string(),
