@@ -1,73 +1,46 @@
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <map>
-#include <vector>
-#include <string>
-#include <exception>
-#include <bitset>
-#include <functional>
-#include <array>
-
-namespace fs = std::filesystem;
-using i8 = int8_t; //for instruction set
-
-const std::string& asmDir = "Asm";
-const std::string& binDir = "Bin";
-const int Instr_Size = 256;
-const int nOfBasics = 4;
-const int nOfArith = 8;
-const int nOfDataMvm = 6;
-const int nOfLoadAndJump = 7;
-
-//for instruction set
-std::array<std::string, Instr_Size> Instruction_Set; //set of actual instrucions as they come from strings;
-std::map<std::string, std::bitset<8>> Instruction_Key; //actual hashmap of each instruction
-
-// Forward declarations
-void increment(std::bitset<8>& bits);
+#include "assembler.hpp"
 
 
-//see ASM_Instructions.md for explainations
-void defineInstructions(std::array<std::string, Instr_Size>& arr){
-    arr.at(0) = "NOPERATION";
-    arr.at(1) = "HALT";
-    arr.at(2) = "RETURN";
-    arr.at(3) = "CLRFLAGS";
-    //done with basics
-    arr.at(4) = "ADD";
-    arr.at(5) = "SUB";
-    arr.at(6) = "DIV";
-    arr.at(7) = "MULTI";
-    arr.at(8) = "OR";
-    arr.at(9) = "AND";
-    arr.at(9) = "!OR";
-    arr.at(10) = "NOT";
-    //done with arith
-    //data movement
-    arr.at(11) = "MOVE"; 
-    arr.at(12) = "MOVE&CLR";
-    arr.at(13) = "LOAD";
-    arr.at(14) = "STORE";
-    arr.at(15) = "PUSH";
-    arr.at(16) = "POP";
-    //Load and jumps
-    arr.at(17) = "LOADIMM";
-    arr.at(18) = "JMP";
-    arr.at(19) = "JMPIF0";
-    arr.at(20) = "JMPIF!0";
-    arr.at(21) = "CALL";
-    arr.at(22) = "JMPIFCRRY";
-    arr.at(23) = "JMPIFAULT";
 
+void increment(_byte& bits){
+    for(int i = 0; i < bits.size(); ++i){
+        if (bits.flip(i).test(i)){
+            break;
+        }
+    }
+}
+
+i8 convertBitsetToByte(_byte byte){
+    return static_cast<usi8>(byte.to_ulong());
+}
+
+//We could just type cast into bitset, but I would rather tell the user that there is an
+//error
+template <std::integral T>
+std::optional<_byte> getNumberConversion(T incomingNumber) {
+    if (incomingNumber > 127 || incomingNumber < -128) {
+        return std::nullopt;
+    }
+
+    const auto converted = static_cast<i8>(incomingNumber);
+    const i8 magnitude = static_cast<i8>(std::abs(converted));
+
+    _byte bits(magnitude); 
+    bits[7] = (converted < 0); //since 7 is Most significant bit
+    return bits;
+}
+
+
+_byte getNextInstruction(const std::string& instruction){
+    return Instruction_Key.at(instruction);
 }
 
 /**
  * @brief treating the first 2 bits as the type, this maps all instructions, as seen in
  * @def defineInstructions
  */
-void defineMap(std::map<std::string, std::bitset<8>>& map){
-    std::bitset<8> bits;
+void defineMap(std::map<std::string, _byte>& map){
+    _byte bits;
     bits.reset();
     i8 itr = 0;
     for(auto& a : Instruction_Set){
@@ -85,50 +58,81 @@ void defineMap(std::map<std::string, std::bitset<8>>& map){
     }
 }
 
-
-std::bitset<8> getNextInstruction(const std::string& instruction){
-    return Instruction_Key.at(instruction);
-}
-
-
-
-
-
-
-void increment(std::bitset<8>& bits){
-    for(int i = 0; i < bits.size(); ++i){
-        if (bits.flip(i).test(i)){
-            break;
-        }
+std::vector<std::string> tokenize(const std::string& line) {
+    std::vector<std::string> tokens;
+    std::istringstream stream(line);
+    std::string token;
+    while (stream >> token){
+    tokens.push_back(token);
     }
+    return tokens;
 }
 
 
+/**
+ * @details little abstraction to take a single line of asm and convert it to binary
+ */
+void assembleHelper(const std::string& line, std::vector<i8>& binFile){
+    if (line.empty() || line[0] == '#'){
+        return;
+    }
+
+    auto tokens = tokenize(line);
+    std::string mnemonic = tokens[0]; // instruction (Ex: ADD)
+    auto opcode = Instruction_Key.at(mnemonic);
+    InstrType type = Instruction_Types.at(mnemonic);
+
+    if(type == InstrType::BASIC) { // 1 byte — just the opcode
+        binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
+
+    }else if (type == InstrType::ARITH || type == InstrType::DATA_MOV) {
+    binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
+
+    if (mnemonic == "NOT") {
+        // only one register, bottom nibble is 0
+            i8 r1 = Register_Key.at(tokens[1]);
+            _byte operands(r1 << 4);
+            binFile.push_back(convertBitsetToByte(operands));
+        }else{
+            i8 r1 = Register_Key.at(tokens[1]);
+            i8 r2 = Register_Key.at(tokens[2]);
+            _byte operands((r1 << 4) | r2);
+            binFile.push_back(convertBitsetToByte(operands));}
+    }else if (type == InstrType::LOAD_JUMP) {
+        // 3 bytes — opcode, [R1 | 0000], address
+        i8 r1 = Register_Key.at(tokens[1]);
+        usi8 addr = std::stoul(tokens[2], nullptr, 0); // handles 0x prefix
+        _byte regByte(r1 << 4);
+        binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
+        binFile.push_back(convertBitsetToByte(regByte));
+        binFile.push_back(addr);
+        }
+}
 
 void assemble(const std::string& filePath){
+    using namespace std;
+    vector<i8> binFile;
     try{
-        std::ifstream inputFile(filePath);
+        ifstream inputFile(filePath);
         if(!inputFile.is_open()){
-            throw std::runtime_error("Could not open file: " + filePath);
+            throw runtime_error("Could not open file: " + filePath);
         }
 
-        std::string instruction;
-        std::string outputFileName = filePath.substr(filePath.find_last_of("/\\") + 1);
+        string outputFileName = filePath.substr(filePath.find_last_of("/\\") + 1);
         outputFileName = outputFileName.substr(0, outputFileName.find_last_of("."));
-        std::ofstream outputFile(binDir + "/" + outputFileName + ".bin");
+        ofstream outputFile(binDir + "/" + outputFileName + ".bin");
 
-        while(std::getline(inputFile, instruction)){
-            // Skip empty lines and comments
-            if(instruction.empty() || instruction[0] == '#') continue;
-
-            auto bitRepresentation = getNextInstruction(instruction);
-            outputFile << bitRepresentation << "\n";
+        string line;
+        while (getline(inputFile, line)) {
+            assembleHelper(line, binFile);
         }
-
+        for(auto& a : binFile){
+            outputFile << a;
+        }
         inputFile.close();
         outputFile.close();
-    }catch(const std::exception& e){
-        std::cerr << "Error assembling file: " << e.what() << std::endl;
+    }catch(const exception& e){
+        cerr << "Error assembling file: " << e.what() << std::endl;
     }
 }
 
