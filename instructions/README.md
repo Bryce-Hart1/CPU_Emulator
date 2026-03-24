@@ -6,3 +6,7 @@ index.html            ← web shell, keep it (just rename eframe_template → yo
 Cargo.toml            ← keep structure, just edit the metadata fields
 rust-toolchain.toml   ← pins your Rust version, keep it
 Trunk.toml            ← web build config, keep it
+
+
+
+compile assembler with g++ -std=c++26 -o assembler assembler.cpp

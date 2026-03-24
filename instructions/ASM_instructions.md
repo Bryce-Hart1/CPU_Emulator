@@ -24,7 +24,7 @@ All 4 bits
 # Instructions
 
 ## Basic (1 byte)
-Includes: NOPERATION, HALT, RETURN, CLRFLAGS
+Includes 4 instructions: NOPERATION, HALT, RETURN, CLRFLAGS
 ```
 0
 0000 0000 NOPERATION
@@ -40,7 +40,7 @@ Return from subroutine pop Program counter off stack
 Clear all flags
 ```
 ## Arithmetic (2 bytes)
-Includes ADD, SUB, DIV, MULTI, OR, XOR, NOT
+Includes 8 instructions: ADD, SUB, DIV, MULTI, OR, AND, !OR, NOT
 ```
 0100 0000 ADD R1 (4 bits) R2 (4 bits)
 Adds R2 into R1 and sets R2 to 0
@@ -55,14 +55,14 @@ Adds R2 into R1 and sets R2 to 0
 
 0100 0101 AND 
 
-0100 0110 !OR 
+0100 0110 !OR (XOR)
 
 0100 0111 NOT
 ```
 
 
 ## Data Movement (2 bytes)
-Includes: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
+Includes 6 instructions: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
 ```
 0100 1000 MOVE
 
@@ -80,7 +80,7 @@ Includes: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
 ```
 
 ## Load and Jumps (3 bytes)
-Includes: LOADIMM, JMP, JMPIF0, JMPIF!0, CALL, JMPIFCRRY, JMPIFAULT
+Includes 7 instructions: LOADIMM, JMP, JMPIF0, JMPIF!0, CALL, JMPIFCRRY, JMPIFAULT
 ```
 1000 0000 LOADIMM R1 (4 bits ) (4 bits padding) (8 bit addr)
 same as LDI, loads an 8 bit address into R1
