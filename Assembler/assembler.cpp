@@ -1,6 +1,12 @@
 #include "assembler.hpp"
 
-
+namespace terminal{
+    std::size_t atLine = 0;
+    std::vector<std::string> _warnings;
+    std::vector<std::string> _errors;
+    std::string wrnMes = "[warning]: "; //comes with a space after
+    std::string errMes = "[ERROR]: "; //comes with a space after
+}
 
 void increment(_byte& bits){
     for(int i = 0; i < bits.size(); ++i){
@@ -17,46 +23,14 @@ i8 convertBitsetToByte(_byte byte){
 //We could just type cast into bitset, but I would rather tell the user that there is an
 //error
 template <std::integral T>
-std::optional<_byte> getNumberConversion(T incomingNumber) {
+std::optional<_bytestr> getNumberConversion(T incomingNumber) {
+    using namespace terminal;
     if (incomingNumber > 127 || incomingNumber < -128) {
+        _warnings.push_back(wrnMes + "Number converted '" + std::to_string(incomingNumber) + );
         return std::nullopt;
     }
-
-    const auto converted = static_cast<i8>(incomingNumber);
-    const i8 magnitude = static_cast<i8>(std::abs(converted));
-
-    _byte bits(magnitude); 
-    bits[7] = (converted < 0); //since 7 is Most significant bit
-    return bits;
 }
 
-
-_byte getNextInstruction(const std::string& instruction){
-    return Instruction_Key.at(instruction);
-}
-
-/**
- * @brief treating the first 2 bits as the type, this maps all instructions, as seen in
- * @def defineInstructions
- */
-void defineMap(std::map<std::string, _byte>& map){
-    _byte bits;
-    bits.reset();
-    i8 itr = 0;
-    for(auto& a : Instruction_Set){
-        map.insert({a, bits});
-            if(itr == nOfArith || itr == nOfBasics || itr == nOfDataMvm || itr == nOfLoadAndJump){
-                bits.reset();
-                if(itr == nOfBasics){ //onto 0100 
-                    bits.flip(1);
-                }
-                if(itr == nOfLoadAndJump){ //onto 1000
-                    bits.flip(0);
-                }
-                increment(bits);
-            }
-    }
-}
 
 std::vector<std::string> tokenize(const std::string& line) {
     std::vector<std::string> tokens;
@@ -127,7 +101,7 @@ void assemble(const std::string& filePath){
             assembleHelper(line, binFile);
         }
         for(auto& a : binFile){
-            outputFile << a;
+            cout << a << std::endl;
         }
         inputFile.close();
         outputFile.close();
