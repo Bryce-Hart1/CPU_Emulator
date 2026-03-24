@@ -88,8 +88,8 @@ void assembleHelper(const std::string& line, std::vector<i8>& binFile){
     }else if (type == InstrType::ARITH || type == InstrType::DATA_MOV) {
     binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
 
-    if (mnemonic == "NOT") {
-        // only one register, bottom nibble is 0
+    if (mnemonic == "NOT"){ //special case:
+        // only one register, bottom part is 0
             i8 r1 = Register_Key.at(tokens[1]);
             _byte operands(r1 << 4);
             binFile.push_back(convertBitsetToByte(operands));
@@ -120,7 +120,7 @@ void assemble(const std::string& filePath){
 
         string outputFileName = filePath.substr(filePath.find_last_of("/\\") + 1);
         outputFileName = outputFileName.substr(0, outputFileName.find_last_of("."));
-        ofstream outputFile(binDir + "/" + outputFileName + ".bin");
+        ofstream outputFile(binDir + "/" + outputFileName + binPostfix);
 
         string line;
         while (getline(inputFile, line)) {
@@ -146,10 +146,10 @@ std::vector<std::string> getAsmFiles(const std::string& asmDirPath, const std::s
             throw std::runtime_error("Asm directory does not exist: " + asmDirPath);
         }
 
-        for(const auto& entry : fs::directory_iterator(asmDirPath)){
+        for(const auto& entry : fs::directory_iterator(asmDirPath)){ //will do this for all files
             if(entry.is_regular_file()){
                 std::string filename = entry.path().filename().string();
-                if(filename.substr(filename.find_last_of(".") + 1) == "asm"){
+                if(filename.substr(filename.find_last_of(".") + 1) == asmPostfix){
                     files.push_back(entry.path().string());
                 }
             }

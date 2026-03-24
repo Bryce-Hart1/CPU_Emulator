@@ -34,6 +34,8 @@ std::map<std::string, i8> Register_Key = {
     {"R12", 12},{"R13", 13},{"R14", 14},{"R15", 15}
 };
 
+const std::string& asmPostfix = "a"; //choose the type of file that ASM will be read from 
+const std::string& binPostfix = ".b"; //choose the type of file that "binary" will write to. include dot for now
 
 const std::string& asmDir = "Asm";
 const std::string& binDir = "Bin";
@@ -48,9 +50,9 @@ std::array<std::string, Instr_Size> Instruction_Set; //set of actual instrucions
 std::map<std::string, std::bitset<8>> Instruction_Key; //actual hashmap of each instruction
 
 
-void increment(std::bitset<8>& bits);
+void increment(_byte& bits);
 
-i8 convertBitsetToByte(std::bitset<8> bits);
+i8 convertBitsetToByte(_byte bits);
 
 enum class InstrType { BASIC, ARITH, DATA_MOV, LOAD_JUMP };
 
