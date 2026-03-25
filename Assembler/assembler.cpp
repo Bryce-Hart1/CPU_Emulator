@@ -8,17 +8,6 @@ namespace terminal{
     std::string errMes = "[ERROR]: "; //comes with a space after
 }
 
-void increment(_byte& bits){
-    for(int i = 0; i < bits.size(); ++i){
-        if (bits.flip(i).test(i)){
-            break;
-        }
-    }
-}
-
-i8 convertBitsetToByte(_byte byte){
-    return static_cast<usi8>(byte.to_ulong());
-}
 
 //We could just type cast into bitset, but I would rather tell the user that there is an
 //error
@@ -46,7 +35,7 @@ std::vector<std::string> tokenize(const std::string& line) {
 /**
  * @details little abstraction to take a single line of asm and convert it to binary
  */
-void assembleHelper(const std::string& line, std::vector<i8>& binFile){
+void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
     if (line.empty() || line[0] == '#'){
         return;
     }
@@ -57,7 +46,7 @@ void assembleHelper(const std::string& line, std::vector<i8>& binFile){
     InstrType type = Instruction_Types.at(mnemonic);
 
     if(type == InstrType::BASIC) { // 1 byte — just the opcode
-        binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
+        binFile.push_back(getNextInstruction(tokens.at(0)));
 
     }else if (type == InstrType::ARITH || type == InstrType::DATA_MOV) {
     binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
@@ -85,7 +74,7 @@ void assembleHelper(const std::string& line, std::vector<i8>& binFile){
 
 void assemble(const std::string& filePath){
     using namespace std;
-    vector<i8> binFile;
+    vector<_bytestr> binFile;
     try{
         ifstream inputFile(filePath);
         if(!inputFile.is_open()){
