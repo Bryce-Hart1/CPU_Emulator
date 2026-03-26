@@ -10,9 +10,7 @@
 #include <fstream>
 #include <filesystem>
 #include <map>
-#include <vector>
 #include <string>
-#include <exception>
 #include <bitset>
 #include <functional>
 #include <array>
@@ -21,17 +19,11 @@
 #include <concepts>
 #include <sstream>
 #include <format>
+#include <cmath>
+
+#include "exceptions.hpp" 
 
 
-
-namespace fs = std::filesystem;
-using i8 = int8_t; // for instruction set
-using usi8 = uint8_t;
-using _byte = std::bitset<8>; // a bitset<8> namespace
-using _bytestr = std::array<char, 8>;
-
-inline std::map<std::string, i8> Register_Key = {
-    {"R0", 0}, {"R1", 1}, {"R2", 2}, {"R3", 3}, {"R4", 4}, {"R5", 5}, {"R6", 6}, {"R7", 7}, {"R8", 8}, {"R9", 9}, {"R10", 10}, {"R11", 11}, {"R12", 12}, {"R13", 13}, {"R14", 14}, {"R15", 15}};
 
 inline const std::string &asmPostfix = "a";  // choose the type of file that ASM will be read from
 inline const std::string &binPostfix = ".b"; // choose the type of file that "binary" will write to. include dot for now
@@ -60,6 +52,23 @@ enum class InstrType
     DATA_MOV,
     LOAD_JUMP
 };
+
+inline _bytestr getRegisterKey(std::string R1, std::string R2){
+    std::string byte = "";
+    std::map<std::string, std::string> Register_Key = {
+    {"R0", "0000"}, {"R1", "0001"}, {"R2", "0010"}, {"R3", "0011"}, {"R4", "0100"}, {"R5", "0101"}, {"R6", "0110"}, {"R7", "0111"}, {"R8", "1000"},
+    {"R9", "1001"}, {"R10", "1010"}, {"R11", "1011"}, {"R12", "1100"}, {"R13", "1101"}, {"R14", "1110"}, {"R15", "1111"}, {"0000", "0000"}};
+    for(int i = 0; i < 2; i++){
+        try{
+            byte += Register_Key.at(R1);
+            }catch(const std::exception& e){
+                terminal::addSyntaxError(R1);
+        }
+    }
+}
+inline _bytestr getRegisterKey(std::string R1){
+    return getRegisterKey(R1, "0000");
+}
 
 /**
  * helps keep binary instructions readable in @def defineInstructions
@@ -114,8 +123,8 @@ inline std::map<std::string, InstrType> Instruction_Types = {
     {"JMPIFAULT", InstrType::LOAD_JUMP}};
 
 // see ASM_Instructions.md for explainations
-inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS> &arr, std::array<_bytestr, TOTAL_NUM_OF_INSTRUCTIONS> &bin)
-{
+inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS> &arr, 
+    std::array<_bytestr, TOTAL_NUM_OF_INSTRUCTIONS> &bin){
     arr.at(0) = "NOPERATION";
     addBinInstruction("0000:0000");
     arr.at(1) = "HALT";
@@ -172,30 +181,47 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("1000:0110");
 }
 
+
+
+//We could just type cast into bitset, but I would rather tell the user that there is an
+//error
 template <std::integral T>
-inline std::optional<_bytestr> getNumberConversion(T incoming){
-    _bytestr r;
-    if (incoming > 127 || incoming < -128){ // largest 8 bit values
-        i8 thisBit= 64;
-        if(incoming < 0){
-            r.at(0) = '1'; //top bit is the signed
-            incoming = std::asb(incoming);
-        }
-        for(int i = 1; i < 8; i++){
-            if(incoming >= thisBit){
-                
-            }
-        }
+std::optional<_bytestr> getNumberConversion(T incomingNumber) {
+    using namespace terminal;
+    if (incomingNumber > 127 || incomingNumber < -128) {
+        terminal::addIntegralOutOfRange(incomingNumber);
+        return std::nullopt;
     }
+
+    // BUILD THIS <_________________
 }
 
 inline _bytestr getNextInstruction(const std::string &instruction){
     return Instruction_Key.at(instruction);
 }
 
-inline _bytestr getTranslatedAddress(){
-
-}
+/**
+ * for RAM address. 
+ */
+inline _bytestr getTranslatedAddress(std::string hex){
+    int incoming = 0; 
+    if (incoming > 256 || incoming < 0){ // largest 8 bit values
+        terminal::addAddressOutOfRange(incoming);
+        return terminal::emptyByteStr;
+    }
+        int thisBit= 128;
+        _bytestr r; //return
+        for(int i = 0; i < 8; i++){
+            if(incoming >= thisBit){
+                incoming %= thisBit;
+                r.at(i) = '1';
+            }else{
+                r.at(i) = '0';
+            }
+            thisBit /= 2;
+        }
+    }
+    
 
 inline void defineMap(std::map<std::string, _bytestr> &map)
 {

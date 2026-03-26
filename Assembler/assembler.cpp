@@ -1,24 +1,6 @@
 #include "assembler.hpp"
 
-namespace terminal{
-    std::size_t atLine = 0;
-    std::vector<std::string> _warnings;
-    std::vector<std::string> _errors;
-    std::string wrnMes = "[warning]: "; //comes with a space after
-    std::string errMes = "[ERROR]: "; //comes with a space after
-}
 
-
-//We could just type cast into bitset, but I would rather tell the user that there is an
-//error
-template <std::integral T>
-std::optional<_bytestr> getNumberConversion(T incomingNumber) {
-    using namespace terminal;
-    if (incomingNumber > 127 || incomingNumber < -128) {
-        _warnings.push_back(wrnMes + "Number converted '" + std::to_string(incomingNumber) + );
-        return std::nullopt;
-    }
-}
 
 
 std::vector<std::string> tokenize(const std::string& line) {
@@ -46,29 +28,22 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
     InstrType type = Instruction_Types.at(mnemonic);
 
     if(type == InstrType::BASIC) { // 1 byte — just the opcode
-        binFile.push_back(getNextInstruction(tokens.at(0)));
+        binFile.push_back(getNextInstruction(mnemonic));
 
-    }else if (type == InstrType::ARITH || type == InstrType::DATA_MOV) {
-    binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
+    }else if (type == InstrType::ARITH || type == InstrType::DATA_MOV) { //opcode, 1/2 addresses
+        binFile.push_back(getNextInstruction(mnemonic)); //byte 1
 
-    if (mnemonic == "NOT"){ //special case:
-        // only one register, bottom part is 0
-            i8 r1 = Register_Key.at(tokens[1]);
-            _byte operands(r1 << 4);
-            binFile.push_back(convertBitsetToByte(operands));
+        if (mnemonic == "NOT"){ //special case:
+            binFile.push_back(getRegisterKey(tokens[1])); //byte 2
         }else{
-            i8 r1 = Register_Key.at(tokens[1]);
-            i8 r2 = Register_Key.at(tokens[2]);
-            _byte operands((r1 << 4) | r2);
-            binFile.push_back(convertBitsetToByte(operands));}
+            binFile.push_back(getRegisterKey(tokens[1], tokens[2])); //byte 2
+        }
+
     }else if (type == InstrType::LOAD_JUMP) {
         // 3 bytes — opcode, [R1 | 0000], address
-        i8 r1 = Register_Key.at(tokens[1]);
-        usi8 addr = std::stoul(tokens[2], nullptr, 0); // handles 0x prefix
-        _byte regByte(r1 << 4);
-        binFile.push_back(convertBitsetToByte(getNextInstruction(mnemonic)));
-        binFile.push_back(convertBitsetToByte(regByte));
-        binFile.push_back(addr);
+        binFile.push_back(getNextInstruction(mnemonic)); //byte 1 
+        binFile.push_back(getRegisterKey(tokens[1])); //byte 2 (half : 0000)
+        binFile.push_back(getTranslatedAddress(tokens[2])); //byte 3
         }
 }
 
@@ -89,8 +64,11 @@ void assemble(const std::string& filePath){
         while (getline(inputFile, line)) {
             assembleHelper(line, binFile);
         }
-        for(auto& a : binFile){
-            cout << a << std::endl;
+        for(std::size_t i = 0; i < (binFile.size()); i++){
+            _bytestr translate = binFile.at(i);
+            for(int j = 0; j < 8; j++){
+                outputFile << translate.at(j);
+            }
         }
         inputFile.close();
         outputFile.close();
@@ -126,7 +104,7 @@ std::vector<std::string> getAsmFiles(const std::string& asmDirPath, const std::s
 
 
 int main(){
-    defineInstructions(Instruction_Set);
+    defineInstructions(Instruction_Set, BinaryMatch_Set);
     defineMap(Instruction_Key);
 
     // Create Bin directory if it doesn't exist
