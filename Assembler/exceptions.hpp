@@ -1,0 +1,37 @@
+#include <exception>
+#include <vector>
+
+#pragma once
+
+
+
+namespace fs = std::filesystem;
+using i8 = int8_t; // for instruction set
+using usi8 = uint8_t;
+using _byte = std::bitset<8>; // a bitset<8> namespace
+using _bytestr = std::array<char, 8>;
+
+namespace terminal{
+    std::size_t atLine = 0;
+    std::vector<std::string> _warnings;
+    std::vector<std::string> _errors;
+    const std::string& wrnMes = "[warning]: "; //comes with a space after
+    const std::string& errMes = "[ERROR]: "; //comes with a space after
+    const std::string& atLin = "At line: "; //comes with space after
+    const _bytestr emptyByteStr = {'0', '0', '0', '0', '0', '0', '0', '0'};
+    //incremements the line that assembler is at
+    void incrementLineWorkingOn(){
+        atLine++;
+    }
+    void addSyntaxError(const std::string& parsed){
+        _errors.push_back(errMes + atLin + std::to_string(atLine) +  ' ' + parsed + "Is not valid syntax");
+    }
+    void addAddressOutOfRange(int address){
+        _errors.push_back(errMes + atLin + std::to_string(atLine) + ' ' + std::to_string(address) + "is out of range");
+    }
+    template <std::integral Type>
+    void addIntegralOutOfRange(Type incomingNumber){
+        _warnings.push_back(wrnMes + "Number converted " + std::to_string(incomingNumber) + " is not translatable to 8 bytes ");
+
+    }
+}
