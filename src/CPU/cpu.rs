@@ -313,31 +313,11 @@ impl Cpu {
 }
 
 
-
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin"); //this should be the folder your binary is coming from
-
-    let binary = fs::read(path).unwrap_or_else(|_| {
-        // Fallback: a tiny hardcoded demo program so the scaffolding runs standalone
-        // LOADIMM R1, 0x0A
-        // LOADIMM R2, 0x05
-        // ADD R1, R2
-        // HALT
-        vec![
-            0x80, 0x10, 0x0A,
-            0x80, 0x20, 0x05,
-            0x40, 0x12,
-            0x01,
-        ]
-    });
-
-    println!("loaded {} bytes from '{}'", binary.len(), path);
-    println!("{}", "─".repeat(52));
-
-
-
+/**
+ * run actual implementation 
+ * create a ram, CPU, and screen
+ */
+fn run(){
     let mut cpu = Cpu::new(); // create the CPU
     let mut ram = RAM::new(); // and ram
     while !cpu.halted {
@@ -364,9 +344,33 @@ fn main() {
         };
         println!("  {}  =  {:#04X}  ({:08b})", label, cpu.regs.get(i), cpu.regs.get(i));
     }
-    println!("  flags: zero={}  carry={}  fault={}",
-        cpu.flags.zero  as u8,
-        cpu.flags.carry as u8,
-        cpu.flags.fault as u8,
-    );
+    println!("  flags: zero={}  carry={}  fault={}", cpu.flags.zero  as u8, cpu.flags.carry as u8, cpu.flags.fault as u8,);
+}
+
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin"); //this should be the folder your binary is coming from
+
+    let binary = fs::read(path).unwrap_or_else(|_| {
+        // Fallback: a tiny hardcoded demo program so the scaffolding runs standalone
+        // LOADIMM R1, 0x0A
+        // LOADIMM R2, 0x05
+        // ADD R1, R2
+        // HALT
+        vec![
+            0x80, 0x10, 0x0A,
+            0x80, 0x20, 0x05,
+            0x40, 0x12,
+            0x01,
+        ]
+    });
+
+    println!("loaded {} bytes from '{}'", binary.len(), path);
+    println!("{}", "─".repeat(52));
+
+    run(); //run program
+
+
+
 }
