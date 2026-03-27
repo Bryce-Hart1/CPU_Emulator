@@ -55,16 +55,23 @@ enum class InstrType
 
 inline _bytestr getRegisterKey(std::string R1, std::string R2){
     std::string byte = "";
+    _bytestr r;
     std::map<std::string, std::string> Register_Key = {
     {"R0", "0000"}, {"R1", "0001"}, {"R2", "0010"}, {"R3", "0011"}, {"R4", "0100"}, {"R5", "0101"}, {"R6", "0110"}, {"R7", "0111"}, {"R8", "1000"},
     {"R9", "1001"}, {"R10", "1010"}, {"R11", "1011"}, {"R12", "1100"}, {"R13", "1101"}, {"R14", "1110"}, {"R15", "1111"}, {"0000", "0000"}};
-    for(int i = 0; i < 2; i++){
-        try{
-            byte += Register_Key.at(R1);
-            }catch(const std::exception& e){
-                terminal::addSyntaxError(R1);
-        }
+
+    try{
+        byte += Register_Key.at(R1);
+        byte += Register_Key.at(R2);
+    }catch(const std::exception& e){
+        terminal::addSyntaxError(R1);
     }
+
+    for(int i = 0; i < 8 && i < byte.size(); i++){
+        r.at(i) = byte.at(i);
+    }
+
+    return r;
 }
 inline _bytestr getRegisterKey(std::string R1){
     return getRegisterKey(R1, "0000");
@@ -77,11 +84,12 @@ inline _bytestr getRegisterKey(std::string R1){
 inline void addBinInstruction(const std::string str)
 {
     _bytestr temp;
-    for (int i = 0; i < 9; i++)
-    { // always only take 8 (one byte)
+    int tempIdx = 0;
+    for (int i = 0; i < str.length() && tempIdx < 8; i++)
+    { // always only take 8 (one byte), skip the colon at position 4
         if (i != 4)
         {
-            temp.at(i) = str.at(i);
+            temp.at(tempIdx++) = str.at(i);
         }
     }
     BinaryMatch_Set.at(binMatchItr++) = temp;
@@ -189,44 +197,64 @@ template <std::integral T>
 std::optional<_bytestr> getNumberConversion(T incomingNumber) {
     using namespace terminal;
     if (incomingNumber > 127 || incomingNumber < -128) {
-        terminal::addIntegralOutOfRange(incomingNumber);
-        return std::nullopt;
+        terminal::addIntegralOutOfRange(incomingNumber); //warning for now
+        return terminal::emptyByteStr;
     }
-
-    // BUILD THIS <_________________
+    _bytestr r;
+    int n = (static_cast<int>(incomingNumber));
+    if(n < 0){
+        r.at(0) = '1';
+        n = std::abs(n);
+    }
+    int thisBit= 64;
+    for(int i = 1; i < 8; i++){
+        if(n >= thisBit){
+            n %= thisBit;
+            r.at(i) = '1';
+        }else{
+            r.at(i) = '0';
+        }
+        thisBit /= 2;
+    }
+    return r;
 }
+    
 
 inline _bytestr getNextInstruction(const std::string &instruction){
     return Instruction_Key.at(instruction);
 }
 
 /**
- * for RAM address. 
+ * for RAM address.
  */
 inline _bytestr getTranslatedAddress(std::string hex){
-    int incoming = 0; 
+    if(hex.at(0) != 'h' && hex.at(0) != 'H'){
+        terminal::addSyntaxError(hex);
+    }
+    int incoming = std::stoi(hex, nullptr, 16); // convert hex string to integer
     if (incoming > 256 || incoming < 0){ // largest 8 bit values
         terminal::addAddressOutOfRange(incoming);
         return terminal::emptyByteStr;
     }
-        int thisBit= 128;
-        _bytestr r; //return
-        for(int i = 0; i < 8; i++){
-            if(incoming >= thisBit){
-                incoming %= thisBit;
-                r.at(i) = '1';
-            }else{
-                r.at(i) = '0';
-            }
-            thisBit /= 2;
+    int thisBit= 128;
+    _bytestr r; //return
+    for(int i = 0; i < 8; i++){
+        if(incoming >= thisBit){
+            incoming %= thisBit;
+            r.at(i) = '1';
+        }else{
+            r.at(i) = '0';
         }
+        thisBit /= 2;
     }
+    return r;
+}
     
-
+//sets up passed in map with all instructions and their matching binary
 inline void defineMap(std::map<std::string, _bytestr> &map)
 {
-    for (std::size_t i = 0; i < TOTAL_NUM_OF_INSTRUCTIONS; i++)
-    {
+    for (std::size_t i = 0; i < TOTAL_NUM_OF_INSTRUCTIONS; i++){
+
         map.insert({Instruction_Set.at(i), BinaryMatch_Set.at(i)});
     }
 }

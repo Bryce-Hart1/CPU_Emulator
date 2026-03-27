@@ -23,6 +23,10 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
     }
 
     auto tokens = tokenize(line);
+    if (tokens.empty()) {
+        return;
+    }
+
     std::string mnemonic = tokens[0]; // instruction (Ex: ADD)
     auto opcode = Instruction_Key.at(mnemonic);
     InstrType type = Instruction_Types.at(mnemonic);
@@ -34,14 +38,17 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
         binFile.push_back(getNextInstruction(mnemonic)); //byte 1
 
         if (mnemonic == "NOT"){ //special case:
+            if (tokens.size() < 2) return;
             binFile.push_back(getRegisterKey(tokens[1])); //byte 2
         }else{
+            if (tokens.size() < 3) return;
             binFile.push_back(getRegisterKey(tokens[1], tokens[2])); //byte 2
         }
 
     }else if (type == InstrType::LOAD_JUMP) {
         // 3 bytes — opcode, [R1 | 0000], address
-        binFile.push_back(getNextInstruction(mnemonic)); //byte 1 
+        if (tokens.size() < 3) return;
+        binFile.push_back(getNextInstruction(mnemonic)); //byte 1
         binFile.push_back(getRegisterKey(tokens[1])); //byte 2 (half : 0000)
         binFile.push_back(getTranslatedAddress(tokens[2])); //byte 3
         }
