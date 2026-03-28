@@ -97,6 +97,6 @@ Checks Zero flag in flags register
 
 1000 0101 JMPIFCRRY
 
-1000 0111 JMPIFAULT
+1000 0110 JMPIFAULT
 
 ```

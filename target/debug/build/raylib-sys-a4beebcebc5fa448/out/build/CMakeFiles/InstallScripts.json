@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/build/cmake_install.cmake",
+		"/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/build/raylib/cmake_install.cmake",
+		"/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/build/raylib/external/glfw/cmake_install.cmake",
+		"/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/build/raylib/external/glfw/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
