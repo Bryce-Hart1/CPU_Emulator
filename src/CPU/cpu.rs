@@ -4,6 +4,34 @@
 use std::fs;
 use std::env;
 
+use crate::helper;
+
+struct ByteStr{
+    bytes: [char; 8],
+}
+
+impl ByteStr{
+    fn load(&mut self, str : String){
+        for i in 0..8{
+            if let Some(c) = str.chars().nth(i) {
+                self.bytes[i] = c;
+            }
+        }
+    }
+    fn clear(&mut self){
+        for i in 0..8{
+            self.bytes[i] = '0';
+        }
+    }
+    fn hash(&mut self) -> u32{
+        let mut toStr: String = String::new();
+        for i in 0..8{
+            toStr += &self.bytes[i].to_string();
+        }
+        let rtn : u32 = helper::str(&toStr);
+        return rtn;
+    }
+}
 
 struct Registers {
     r: [u8; 16], // R0 (always 0) through R11 (general purpose)
@@ -90,13 +118,8 @@ impl Cpu {
     }
 
     // Fetch the next byte from the binary stream and advance PC
-    fn fetch(&mut self, binary: &[u8]) -> Option<u8> {
-        if self.pc as usize >= binary.len() {
-            return None;
-        }
-        let byte = binary[self.pc as usize];
-        self.pc = self.pc.wrapping_add(1);
-        Some(byte)
+    fn fetch(&mut self, binFile: ) ->  {
+
     }
 
     /**
@@ -104,211 +127,8 @@ impl Cpu {
      * takes in first byte, and if needed grabs the next.
      */ 
     fn step(&mut self, binary: &[u8]) -> Option<DecodedInstruction> {
-        if self.halted {
-            return None;
-        }
 
-        let byte1 = self.fetch(binary)?;
-        let top2  = (byte1 >> 6) & 0x3;
 
-        match top2 {
-            // ── 1-byte instructions (top 2 bits = 00) ────────────────────────
-            0b00 => {
-                let op = byte1 & 0x3F;
-                let (mnemonic, detail) = match op {
-                    0x00 => ("NOPERATION", String::new()),
-                    0x01 => { self.halted = true; ("HALT", String::new()) },
-                    0x02 => ("RETURN", String::from("pop PC off stack")),
-                    0x03 => { self.flags.clear(); ("CLRFLAGS", String::new()) },
-                    _    => ("UNKNOWN", format!("op={:#04X}", op)), //else, unknown command. This should be caught by the assembler
-                };
-                Some(DecodedInstruction {
-                    raw_bytes: vec![byte1],
-                    mnemonic:  mnemonic.to_string(),
-                    detail,
-                })
-            }
-
-            // ── 2-byte instructions (top 2 bits = 01) ────────────────────────
-            0b01 => {
-                let byte2 = self.fetch(binary)?;
-                let op    = byte1 & 0x3F;
-                let r1    = (byte2 >> 4) & 0xF;
-                let r2    =  byte2       & 0xF;
-
-                let detail = match op {
-                    // Arithmetic
-                    0x00 => { // ADD
-                        let sum = self.regs.get(r1) as u16 + self.regs.get(r2) as u16;
-                        self.flags.carry = sum > 0xFF;
-                        self.regs.set(r1, sum as u8);
-                        self.regs.set(r2, 0);
-                        self.flags.zero  = self.regs.get(r1) == 0;
-                        format!("R{} += R{}  →  R{}={:#04X}  R{}=0x00", r1, r2, r1, self.regs.get(r1), r2)
-                    }
-                    0x01 => { // SUB
-                        let (res, borrow) = self.regs.get(r1).overflowing_sub(self.regs.get(r2));
-                        self.flags.carry = borrow;
-                        self.regs.set(r1, res);
-                        self.flags.zero  = res == 0;
-                        format!("R{} -= R{}  →  R{}={:#04X}", r1, r2, r1, res)
-                    }
-                    0x02 => { // DIV
-                        if self.regs.get(r2) == 0 {
-                            self.flags.fault = true;
-                            format!("R{} /= R{}  →  FAULT (div by zero)", r1, r2)
-                        } else {
-                            let res = self.regs.get(r1) / self.regs.get(r2);
-                            self.regs.set(r1, res);
-                            self.flags.zero = res == 0;
-                            format!("R{} /= R{}  →  R{}={:#04X}", r1, r2, r1, res)
-                        }
-                    }
-                    0x03 => { // MULTI
-                        let res = self.regs.get(r1) as u16 * self.regs.get(r2) as u16;
-                        self.flags.carry = res > 0xFF;
-                        self.regs.set(r1, res as u8);
-                        self.flags.zero  = (res as u8) == 0;
-                        format!("R{} *= R{}  →  R{}={:#04X}", r1, r2, r1, res as u8)
-                    }
-                    0x04 => { // OR
-                        let res = self.regs.get(r1) | self.regs.get(r2);
-                        self.regs.set(r1, res);
-                        self.flags.zero = res == 0;
-                        format!("R{} |= R{}  →  R{}={:#04X}", r1, r2, r1, res)
-                    }
-                    0x05 => { // AND
-                        let res = self.regs.get(r1) & self.regs.get(r2);
-                        self.regs.set(r1, res);
-                        self.flags.zero = res == 0;
-                        format!("R{} &= R{}  →  R{}={:#04X}", r1, r2, r1, res)
-                    }
-                    0x06 => { // !OR (NOR)
-                        let res = !(self.regs.get(r1) | self.regs.get(r2));
-                        self.regs.set(r1, res);
-                        self.flags.zero = res == 0;
-                        format!("R{} NOR R{}  →  R{}={:#04X}", r1, r2, r1, res)
-                    }
-                    0x07 => { // NOT
-                        let res = !self.regs.get(r1);
-                        self.regs.set(r1, res);
-                        self.flags.zero = res == 0;
-                        format!("R{}  →  R{}={:#04X}", r1, r1, res)
-                    }
-                    // Data Movement
-                    0x08 => { // MOVE
-                        let val = self.regs.get(r2);
-                        self.regs.set(r1, val);
-                        format!("R{} = R{}  →  {:#04X}", r1, r2, val)
-                    }
-                    0x09 => { // MOVE&CLR
-                        let val = self.regs.get(r2);
-                        self.regs.set(r1, val);
-                        self.regs.set(r2, 0);
-                        format!("R{} = R{}, R{} = 0  →  {:#04X}", r1, r2, r2, val)
-                    }
-                    0x0A => { // LOAD  (load from address in R2 into R1 — stub)
-                        format!("R{} = MEM[R{}]  (stub)", r1, r2)
-                    }
-                    0x0B => { // STORE (store R1 into address in R2 — stub)
-                        format!("MEM[R{}] = R{}  (stub)", r2, r1)
-                    }
-                    0x0C => { // PUSH
-                        format!("push R{}  (stub)", r1)
-                    }
-                    0x0D => { // POP
-                        format!("pop → R{}  (stub)", r1)
-                    }
-                    _ => format!("unknown op={:#04X}", op),
-                };
-
-                let mnemonic = match op {
-                    0x00 => "ADD",      0x01 => "SUB",      0x02 => "DIV",
-                    0x03 => "MULTI",    0x04 => "OR",       0x05 => "AND",
-                    0x06 => "!OR",      0x07 => "NOT",      0x08 => "MOVE",
-                    0x09 => "MOVE&CLR", 0x0A => "LOAD",     0x0B => "STORE",
-                    0x0C => "PUSH",     0x0D => "POP",      _    => "UNKNOWN",
-                };
-
-                Some(DecodedInstruction {
-                    raw_bytes: vec![byte1, byte2],
-                    mnemonic:  mnemonic.to_string(),
-                    detail,
-                })
-            }
-
-            // ── 3-byte instructions (if top 2 are 10, then we grab the next 2)
-            0b10 => {
-                let byte2 = self.fetch(binary)?;
-                let byte3 = self.fetch(binary)?;
-                let op    = byte1 & 0x3F;
-                let r1    = (byte2 >> 4) & 0xF;
-                // lower 4 bits of byte2 are padding for LOADIMM
-
-                let (mnemonic, detail) = match op {
-                    0x00 => { //LOADIMM
-                        self.regs.set(r1, byte3);
-                        self.flags.zero = byte3 == 0;
-                        ("LOADIMM", format!("R{} = {:#04X}", r1, byte3))
-                    }
-                    0x01 => { //JMP
-                        self.pc = byte3;
-                        ("JMP", format!("PC → {:#04X}", byte3))
-                    }
-                    0x02 => { //JMPIF0
-                        if self.flags.zero { self.pc = byte3; }
-                        ("JMPIF0", format!(
-                            "zero={} → {}",
-                            self.flags.zero as u8,
-                            if self.flags.zero { format!("jump {:#04X}", byte3) } else { "no jump".into() }
-                        ))
-                    }
-                    0x03 => { //JMPIF!0
-                        if !self.flags.zero { self.pc = byte3; }
-                        ("JMPIF!0", format!(
-                            "zero={} → {}",
-                            self.flags.zero as u8,
-                            if !self.flags.zero { format!("jump {:#04X}", byte3) } else { "no jump".into() }
-                        ))
-                    }
-                    0x04 => { //CALL  (push PC, jump — stub)
-                        ("CALL", format!("addr={:#04X}  (stub)", byte3))
-                    }
-                    0x05 => { //JMPIFCRRY
-                        if self.flags.carry { self.pc = byte3; }
-                        ("JMPIFCRRY", format!(
-                            "carry={} → {}",
-                            self.flags.carry as u8,
-                            if self.flags.carry { format!("jump {:#04X}", byte3) } else { "no jump".into() }
-                        ))
-                    }
-                    0x07 => { //JMPIFAULT
-                        if self.flags.fault { self.pc = byte3; }
-                        ("JMPIFAULT", format!(
-                            "fault={} → {}",
-                            self.flags.fault as u8,
-                            if self.flags.fault { format!("jump {:#04X}", byte3) } else { "no jump".into() }
-                        ))
-                    }
-                    _ => ("UNKNOWN", format!("op={:#04X}", op)),
-                };
-
-                Some(DecodedInstruction {
-                    raw_bytes: vec![byte1, byte2, byte3],
-                    mnemonic:  mnemonic.to_string(),
-                    detail,
-                })
-            }
-
-            //top 2 bits = 11 is not defined in the ISA
-            _ => {
-                Some(DecodedInstruction {
-                    raw_bytes: vec![byte1],
-                    mnemonic:  "ILLEGAL".to_string(),
-                    detail:    format!("byte={:#010b}", byte1),
-                })
-            }
-        }
     }
 }
 
