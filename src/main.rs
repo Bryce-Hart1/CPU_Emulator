@@ -1,6 +1,7 @@
 mod CPU;
 mod IO;
 mod colors;
+mod helper;
 
 //mod RAM;
 
@@ -10,8 +11,8 @@ use raylib::core::*;
 
 
 fn main() {
-    let monitor_width = raylib::core::rglfw::get_monitor_width(0); // Use the current or primary monitor
-    let monitor_height = raylib::core::rglfw::get_monitor_height(0);
+    //let monitor_width = raylib::core::rglfw::get_monitor_width(0); // Use the current or primary monitor
+    //let monitor_height = raylib::core::rglfw::get_monitor_height(0);
     const _WINDOW_WIDTH : i32 = 800; //fallback sizes
     const _WINDOW_HEIGHT : i32 = 600; //^
 
