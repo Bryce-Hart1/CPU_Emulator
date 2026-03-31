@@ -1,12 +1,10 @@
-// Reads a binary file, decodes instructions per the ISA, and displays
-// each incoming byte alongside the decoded instruction.
+//mod IO;
+//mod RAM;
+
 
 use std::fs;
 use std::env;
-
-
 use std::collections::HashMap;
-
 use crate::helper;
 
 #[derive(Copy, Clone)]
@@ -239,7 +237,7 @@ impl Cpu {
         }
     }
     fn run(&mut self, ramUnit : RAM::ram){
-        while !cpu.halted {
+        while !self.halted {
 
         }
     }
