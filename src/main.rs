@@ -1,9 +1,10 @@
 mod CPU;
 mod IO;
+mod RAM;
 mod colors;
 mod helper;
-
-//mod RAM;
+mod baseplate;
+mod render;
 
 use raylib::prelude::*;
 use raylib::core::*;
