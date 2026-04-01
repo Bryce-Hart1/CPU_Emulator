@@ -2,27 +2,27 @@
 use std::fs;
 use std::env;
 
-struct RAM{
-    locations : [[u8; 16]; 16],
+pub struct RamUnit{
+    locations : [[u32; 16]; 16],
 }
 
 
-impl RAM{
+impl RamUnit{
     const SIZE: usize = 256;
     const GRID: usize = 16;
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { locations: [[0; Self::GRID]; Self::GRID] }
     }    //takes in a 8 bit adr and returns value at that location
-    fn fetch(&self, requested : u8) -> u8{
+    fn fetch(&self, requested : u32) -> u32{
         let row = (requested % 16) as usize;
         let col = (requested / 16) as usize;
-        return locations[row][col];
+        return self.locations[row][col];
     }
     //Assumes the address is correct for example - 
     //if I give 256, 256 / 16 = 16 - out of bounds
-    fn write(&self, addr : u8, data : u8){
-        let row = (requested % 16) as usize;
-        let col = (requested / 16) as usize;   
-        locations[row][col] = data;
+    fn write(&mut self, addr : u8, data : u32){
+        let row = (addr % 16) as usize;
+        let col = (addr / 16) as usize;   
+        self.locations[row][col] = data;
     }
 }
