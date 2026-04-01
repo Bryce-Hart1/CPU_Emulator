@@ -1,12 +1,9 @@
-//mod IO;
-//mod RAM;
-
-
 use std::fs;
 use std::env;
 use std::collections::HashMap;
 use crate::helper;
-
+use crate::IO;
+use crate::RAM;
 #[derive(Copy, Clone)]
 struct ByteStr{
     bytes: [char; 8],
@@ -43,12 +40,7 @@ impl ByteStr{
     }
     pub fn increment(&mut self, amount: i32) {
         // Convert current binary string to a u8 value
-        let mut current: u32 = 0;
-        for i in 0..8 {
-            if self.bytes[i] == '1' {
-                current |= 1 << (7 - i);
-            }
-        }
+        let current: i32 = self.as_u8() as i32;
 
         // Clamp the result to 255
         let new_val = (current as i32 + amount).clamp(0, 255) as u8;
@@ -61,30 +53,59 @@ impl ByteStr{
     pub fn my_hashed_value(&self) -> u32{
         return self.my_hash_val;
     }
+
+    
+    pub fn grab_half(&self, is_bottom_byte : bool) -> String{
+        let mut rtn = String::new();
+        let itr = if is_bottom_byte {
+            0..4
+        } else {
+            4..8
+        };
+
+        for i in itr{
+            rtn.push(self.bytes[i]);
+        }
+        return rtn;
+    }
+
+    pub fn as_u8(&self) -> u8{
+        let mut rtn: u8 = 0;
+        for i in 0..8 {
+            if self.bytes[i] == '1' {
+                rtn |= 1 << (7 - i);
+            }
+        }      
+        return rtn;
+    }
 }
 
 
 struct Registers {
-    r: [u8; 16], // R0 (always 0) through R11 (general purpose)
+    r: [u32; 16], // R0 (always 0) through R11 (general purpose)
                  // R12 = Frame Pointer
                  // R13 = Stack Pointer
                  // R14 = Link Register
                  // R15 = Program Counter (tracked separately as `pc`)
+    pub MAX_TO_CARRY : u32,
 }
 
 impl Registers {
-    fn new() -> Self {
-        Self { r: [0u8; 16] }
+    pub const MAX_TO_CARRY: u32 = u32::max_value();
+    pub fn new() -> Self {
+        Self { r: [0u32; 16] }
     }
 
-    fn get(&self, index: u8) -> u8 {
+    //get value at reg number
+    pub fn get(&self, index: u8) -> u32 {
         if index == 0 { 0 } else { self.r[index as usize] }
     }
 
-    fn set(&mut self, index: u8, value: u8) {
+    pub fn set(&mut self, index: u8, value: u32) {
         if index == 0 { return; } // R0 is always 0, writes are ignored
         self.r[index as usize] = value;
     }
+
 }
 
 
@@ -209,36 +230,124 @@ impl Cpu {
         Some(byte)
 }
 
-    //simple to read excution window
-    fn execute(&mut self, instruction: ByteStr, bin_file: &[ByteStr]) {
+    /**
+     * execution of a single instruction. This does exactly one step. Think that this function
+     * must be called over and over again. 
+     */
+    fn execute(&mut self, instruction: ByteStr, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit) {
         match self.table.lookup(&instruction) {
-            Some(&"NOPERATION") => { /* do nothing */ }
-            Some(&"HALT") => {
+
+        Some(&"NOPERATION") => { /* do nothing */ }
+
+        Some(&"HALT") => {
                 self.halted = true;
             }
-            Some(&"CLRFLAGS") => {
+        Some(&"CLRFLAGS") => {
                 self.flags.clear();
             }
-            Some(&"ADD") => {
-                let byte2 = self.fetch(bin_file).unwrap();
-                let r1 = /* decode upper 4 bits of byte2 */;
-                let r2 = /* decode lower 4 bits of byte2 */;
-                let sum = self.regs.get(r1) as u16 + self.regs.get(r2) as u16;
-                self.flags.carry = sum > 0xFF;
-                self.regs.set(r1, sum as u8);
-                self.regs.set(r2, 0);
-                self.flags.zero = self.regs.get(r1) == 0;
+        Some(&"RETURN") =>{
+
             }
-            // ... etc
-            None => {
-                println!("Unknown instruction, halting.");
-                self.halted = true;
+
+        //arithmetic and data movement
+
+        Some(&"ADD") => {
+            let byte2 = self.fetch(bin_file).unwrap();
+            let r1: String = byte2.grab_half(true);
+            let r2: String = byte2.grab_half(false);
+            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 + 
+            self.regs.get(helper::string_to_u8(r2)) as u32;
+            //set carry flag if needed
+            self.flags.carry = sum > self.regs.MAX_TO_CARRY;
+            self.regs.set(helper::string_to_u8(r1), sum);
+
             }
+        Some(&"SUB") => {
+            let byte2 = self.fetch(bin_file).unwrap();
+            let r1: String = byte2.grab_half(true);
+            let r2: String = byte2.grab_half(false);
+            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 - 
+            self.regs.get(helper::string_to_u8(r2)) as u32;
+            //sum is calculated, store
+            self.regs.set(helper::string_to_u8(r1), sum);       
+        }
+        Some(&"DIV") => {
+            let byte2 = self.fetch(bin_file).unwrap();
+            let r1: String = byte2.grab_half(true);
+            let r2: String = byte2.grab_half(false);
+            let check_zero = helper::string_to_u8(r2); //if r2 is 0, we need to throw to avoid crash
+            if check_zero == 0{
+                self.flags.fault = true;
+                self.halted = true; //halt cpu to prevent crash
+            }
+            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 / 
+            self.regs.get(helper::string_to_u8(r2)) as u32;
+        }
+        Some(&"MULTI") => {
+
+        }
+        Some(&"OR") => {
+
+        }
+        Some(&"AND") => {
+
+        }
+        Some(&"!OR") => {
+
+        }
+        Some(&"NOT") => {
+
+        }
+        Some(&"MOVE") => {
+
+        }
+        Some(&"MOVE&CLR") => {
+
+        }
+        Some(&"LOAD") => {
+
+        }
+        Some(&"STORE") => {
+
+        }
+        Some(&"PUSH") => {
+
+        }
+        Some(&"POP") => {
+
+        }
+        //Load and jumps
+        Some(&"LOADIMM") => {
+
+        }
+        Some(&"JMP") => {
+
+        }
+        Some(&"JMPIF0") => {
+
+        }
+        Some(&"JMPIF!0") => {
+
+        }
+        Some(&"CALL") => {
+
+        }
+        Some(&"JMPIFCRRY") => {
+
+        }
+        Some(&"JMPIFFAULT") => {
+
+        }        
+        None => {
+            println!("Unknown instruction, halting.");
+            self.halted = true;
+        }
         }
     }
-    fn run(&mut self, ramUnit : RAM::ram){
-        while !self.halted {
 
+    fn run(&mut self, ram_unit : RAM::ram::RamUnit){
+        while !self.halted {
+            self.execute(/*pull next */);
         }
     }
         
@@ -251,7 +360,7 @@ impl Cpu {
  */
 fn run(){
     let mut cpu = Cpu::new(); // create the CPU
-    let mut ram = RAM::new(); // and ram
+    let mut ram = RAM::ram::RamUnit::new(); // and ram
     cpu.run();
 
 }
