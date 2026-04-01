@@ -2,7 +2,6 @@
 
 
 
-
 std::vector<std::string> tokenize(const std::string& line) {
     std::vector<std::string> tokens;
     std::istringstream stream(line);

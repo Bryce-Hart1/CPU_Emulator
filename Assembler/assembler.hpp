@@ -117,8 +117,6 @@ inline std::map<std::string, InstrType> Instruction_Types = {
 
     {"MOVE", InstrType::DATA_MOV},
     {"MOVE&CLR", InstrType::DATA_MOV},
-    {"LOAD", InstrType::DATA_MOV},
-    {"STORE", InstrType::DATA_MOV},
     {"PUSH", InstrType::DATA_MOV},
     {"POP", InstrType::DATA_MOV},
 
@@ -128,7 +126,10 @@ inline std::map<std::string, InstrType> Instruction_Types = {
     {"JMPIF!0", InstrType::LOAD_JUMP},
     {"CALL", InstrType::LOAD_JUMP},
     {"JMPIFCRRY", InstrType::LOAD_JUMP},
-    {"JMPIFAULT", InstrType::LOAD_JUMP}};
+    {"JMPIFAULT", InstrType::LOAD_JUMP},
+    {"LOAD", InstrType::DATA_MOV},
+    {"STORE", InstrType::DATA_MOV},
+};
 
 // see ASM_Instructions.md for explainations
 inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS> &arr, 
@@ -160,18 +161,16 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("0100:0111");
     // done with arith
     // data movement 2 bytes aswell
+
     arr.at(12) = "MOVE";
     addBinInstruction("0100:1000");
     arr.at(13) = "MOVE&CLR";
     addBinInstruction("0100:1001");
-    arr.at(14) = "LOAD";
-    addBinInstruction("0100:1010");
-    arr.at(15) = "STORE";
-    addBinInstruction("0100:1011");
     arr.at(16) = "PUSH";
-    addBinInstruction("0100:1100");
+    addBinInstruction("0100:1010");
     arr.at(17) = "POP";
-    addBinInstruction("0100:1101");
+    addBinInstruction("0100:1011");
+
     // Load and jumps
     arr.at(18) = "LOADIMM";
     addBinInstruction("1000:0000");
@@ -187,6 +186,14 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("1000:0101");
     arr.at(24) = "JMPIFAULT";
     addBinInstruction("1000:0110");
+    /**
+     * @attention LOAD and STORE are now three byte instructions. They were in data movement,
+     * but they are not 2 byte instructions, so now they are at the end, here
+     */
+    arr.at(14) = "LOAD";
+    addBinInstruction("1000:0111");
+    arr.at(15) = "STORE";
+    addBinInstruction("1000:1000");
 }
 
 
