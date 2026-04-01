@@ -78,6 +78,23 @@ impl ByteStr{
         }      
         return rtn;
     }
+    pub fn as_string(&self) -> String{
+        let mut rtn: String = String::new();
+        for i in 0..8 {
+            rtn += if self.at(i) { "1" } else { "0" };
+        }
+        return rtn;
+    }
+
+    pub fn at(&self, ind: usize) -> bool {
+        if ind > 7 || ind < 0{
+            return false; //could return option type, but calling out of bounds is programmer error
+        }
+        if self.bytes[ind] != '0' {
+            return true;
+        }
+        return false;
+    }
 }
 
 
@@ -87,7 +104,6 @@ struct Registers {
                  // R13 = Stack Pointer
                  // R14 = Link Register
                  // R15 = Program Counter (tracked separately as `pc`)
-    pub MAX_TO_CARRY : u32,
 }
 
 impl Registers {
@@ -178,10 +194,8 @@ impl InstructionTable {
         // Data Movement (2 bytes)
         map.insert(ByteStr::new("01001000").my_hashed_value(), "MOVE");
         map.insert(ByteStr::new("01001001").my_hashed_value(), "MOVEACLR");
-        map.insert(ByteStr::new("01001010").my_hashed_value(), "LOAD");
-        map.insert(ByteStr::new("01001011").my_hashed_value(), "STORE");
-        map.insert(ByteStr::new("01001100").my_hashed_value(), "PUSH");
-        map.insert(ByteStr::new("01001101").my_hashed_value(), "POP");
+        map.insert(ByteStr::new("01001010").my_hashed_value(), "PUSH");
+        map.insert(ByteStr::new("01001011").my_hashed_value(), "POP");
 
         // Load and Jumps (3 bytes)
         map.insert(ByteStr::new("10000000").my_hashed_value(), "LOADIMM");
@@ -191,7 +205,8 @@ impl InstructionTable {
         map.insert(ByteStr::new("10000100").my_hashed_value(), "CALL");
         map.insert(ByteStr::new("10000101").my_hashed_value(), "JMPIFCRRY");
         map.insert(ByteStr::new("10000110").my_hashed_value(), "JMPIFAULT");
-
+        map.insert(ByteStr::new("10000111").my_hashed_value(), "LOAD");
+        map.insert(ByteStr::new("10001000").my_hashed_value(), "STORE");
         Self { map }
     }
 
@@ -258,7 +273,7 @@ impl Cpu {
             let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 + 
             self.regs.get(helper::string_to_u8(r2)) as u32;
             //set carry flag if needed
-            self.flags.carry = sum > self.regs.MAX_TO_CARRY;
+            self.flags.carry = sum > u32::max_value();
             self.regs.set(helper::string_to_u8(r1), sum);
 
             }
@@ -272,7 +287,7 @@ impl Cpu {
             self.regs.set(helper::string_to_u8(r1), sum);       
         }
         Some(&"DIV") => {
-            let byte2 = self.fetch(bin_file).unwrap();
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
             let r1: String = byte2.grab_half(true);
             let r2: String = byte2.grab_half(false);
             let check_zero = helper::string_to_u8(r2); //if r2 is 0, we need to throw to avoid crash
@@ -282,9 +297,23 @@ impl Cpu {
             }
             let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 / 
             self.regs.get(helper::string_to_u8(r2)) as u32;
+            self.regs.set(helper::string_to_u8(r1), sum);       
+
         }
         Some(&"MULTI") => {
-
+            let byte2 = self.fetch(bin_file).unwrap();
+            let r1: String = byte2.grab_half(true);
+            let r2: String = byte2.grab_half(false);
+            let check_zero = helper::string_to_u8(r2); //if r2 is 0, we need to throw to avoid crash
+            if check_zero == 0{
+                self.flags.fault = true;
+                self.halted = true; //halt cpu to prevent crash
+            }
+            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 * 
+            self.regs.get(helper::string_to_u8(r2)) as u32;
+            //set carry flag if needed, if sum goes over
+            self.flags.carry = sum > u32::max_value();
+            self.regs.set(helper::string_to_u8(r1), sum);       
         }
         Some(&"OR") => {
 
@@ -304,12 +333,6 @@ impl Cpu {
         Some(&"MOVE&CLR") => {
 
         }
-        Some(&"LOAD") => {
-
-        }
-        Some(&"STORE") => {
-
-        }
         Some(&"PUSH") => {
 
         }
@@ -318,6 +341,13 @@ impl Cpu {
         }
         //Load and jumps
         Some(&"LOADIMM") => {
+            let byte2: ByteStr = self.fetch(bin_file).unwrap(); // get second
+            let top: String = byte2.grab_half(false); // This top half is the reg to load
+            let mut load_imm: String = byte2.grab_half(true); //bottom half is our top bytes!
+            let byte3: ByteStr = self.fetch(bin_file).unwrap(); //get third
+            load_imm += &byte3.as_string();
+            let load_num: u32 = helper::string_to_u32(load_imm);
+            self.regs.set(helper::string_to_u8(top), load_num);
 
         }
         Some(&"JMP") => {
@@ -337,7 +367,23 @@ impl Cpu {
         }
         Some(&"JMPIFFAULT") => {
 
-        }        
+        }   
+        Some(&"LOAD") => {
+            let byte2 = self.fetch(bin_file).unwrap();
+            let reg: String = byte2.grab_half(false); //bottom is garbage
+            let byte3: ByteStr = self.fetch(bin_file).unwrap();
+            let address: u8 = byte3.as_u8();
+            let fetched_data: u32 = ram_unit.fetch(address);
+            self.regs.set(helper::string_to_u8(reg), fetched_data);
+        }
+        Some(&"STORE") => {
+            let byte2 = self.fetch(bin_file).unwrap();
+            let reg: String = byte2.grab_half(false); //bottom is garbage
+            let value_on_bus = self.regs.get(helper::string_to_u8(reg));
+            let byte3: ByteStr = self.fetch(bin_file).unwrap();
+            let address: u8 = byte3.as_u8();
+            ram_unit.write(address,value_on_bus);
+        }     
         None => {
             println!("Unknown instruction, halting.");
             self.halted = true;
@@ -345,9 +391,9 @@ impl Cpu {
         }
     }
 
-    fn run(&mut self, ram_unit : RAM::ram::RamUnit){
+    fn run(&mut self, &mut ram_unit: RAM::ram::RamUnit, ){
         while !self.halted {
-            self.execute(/*pull next */);
+            self.execute(ram_unit);
         }
     }
         
@@ -361,7 +407,7 @@ impl Cpu {
 fn run(){
     let mut cpu = Cpu::new(); // create the CPU
     let mut ram = RAM::ram::RamUnit::new(); // and ram
-    cpu.run();
+    cpu.run(ram);
 
 }
 
