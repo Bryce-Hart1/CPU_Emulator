@@ -86,7 +86,7 @@ Adds R2 into R1 and sets R2 to 0
 
 
 ## Data Movement (2 bytes)
-Includes 6 instructions: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
+Includes 4 instructions: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
 ```
 0100 1000 MOVE
 -----------------------------------------------
@@ -96,19 +96,11 @@ Includes 6 instructions: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
 -----------------------------------------------
 
 
-0100 1010 LOAD
+0100 1010 PUSH
 -----------------------------------------------
 
 
-0100 1011 STORE
------------------------------------------------
-
-
-0100 1100 PUSH
------------------------------------------------
-
-
-0100 1101 POP
+0100 1011 POP
 -----------------------------------------------
 
 
@@ -146,5 +138,12 @@ Checks Zero flag in flags register
 1000 0110 JMPIFAULT
 -----------------------------------------------
 
+1000 0111 LOAD
+-----------------------------------------------
+
+
+1000 1000 STORE (reg) (padding) (8 bit addr (ram))
+-----------------------------------------------
+Stores requested value from register into ram at a 8 bit address
 
 ```
