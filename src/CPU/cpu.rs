@@ -249,7 +249,7 @@ impl Cpu {
      * execution of a single instruction. This does exactly one step. Think that this function
      * must be called over and over again. 
      */
-    fn execute(&mut self, instruction: ByteStr, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit) {
+    fn execute(&mut self, instruction: Option<ByteStr>, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit) {
         match self.table.lookup(&instruction) {
 
         Some(&"NOPERATION") => { /* do nothing */ }
@@ -301,7 +301,7 @@ impl Cpu {
 
         }
         Some(&"MULTI") => {
-            let byte2 = self.fetch(bin_file).unwrap();
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
             let r1: String = byte2.grab_half(true);
             let r2: String = byte2.grab_half(false);
             let check_zero = helper::string_to_u8(r2); //if r2 is 0, we need to throw to avoid crash
@@ -316,10 +316,22 @@ impl Cpu {
             self.regs.set(helper::string_to_u8(r1), sum);       
         }
         Some(&"OR") => {
-
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let val1 = self.regs.get(r1);
+            let val2: u32 = self.regs.get(r2);
+            let sum: u32 = val1 | val2;
+            self.regs.set(r1, sum);
         }
         Some(&"AND") => {
-
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let val1 = self.regs.get(r1);
+            let val2: u32 = self.regs.get(r2);
+            let sum: u32 = val1 & val2;
+            self.regs.set(r1, sum);
         }
         Some(&"!OR") => {
 
@@ -328,10 +340,19 @@ impl Cpu {
 
         }
         Some(&"MOVE") => {
-
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let move_val = self.regs.get(r1);
+            self.regs.set(r2, move_val);
         }
         Some(&"MOVE&CLR") => {
-
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let move_val = self.regs.get(r1);
+            self.regs.set(r2, move_val);
+            self.regs.set(r1, self.regs.get(0));
         }
         Some(&"PUSH") => {
 
@@ -391,9 +412,10 @@ impl Cpu {
         }
     }
 
-    fn run(&mut self, &mut ram_unit: RAM::ram::RamUnit, ){
+    fn run(&mut self, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit){
         while !self.halted {
-            self.execute(ram_unit);
+            let next_instruction = self.fetch(bin_file);
+            self.execute(next_instruction, bin_file, ram_unit);
         }
     }
         
@@ -404,24 +426,34 @@ impl Cpu {
  * run actual implementation 
  * create a ram, CPU, and screen
  */
-fn run(){
+fn run(binary_file: Vec<u8>){ //IMPORTANT -> NEED A WAY TO CONVERT
     let mut cpu = Cpu::new(); // create the CPU
     let mut ram = RAM::ram::RamUnit::new(); // and ram
-    cpu.run(ram);
+    cpu.run(binary_file, &ram);
 
 }
 
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin"); //this should be the folder your binary is coming from
+    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin"); //this should be the binary is coming from
 
-    let binary = fs::read(path).unwrap_or_else(|_| {
-        // Fallback: a tiny hardcoded demo program so the scaffolding runs standalone
+    let binary: Vec<char> = fs::read(path).unwrap_or_else(|_| {
+        // Fallback: hardcoded program so the scaffolding runs standalone
         // LOADIMM R1, 0x0A
         // LOADIMM R2, 0x05
         // ADD R1, R2
         // HALT
+        let instr1: String =  0x80;
+        let instr2: u32 =  0x10;
+        let instr3: u32 =  0x0A;
+        let instr4: u32 =  0x80;
+        let instr5: u32 =  0x20;
+        let instr6: u32 =  0x05;
+        let instr7: u32 =  0x40;
+        let instr8: u32 =  0x12;
+        let instr9: u32 =  0x01;
+
         vec![
             0x80, 0x10, 0x0A,
             0x80, 0x20, 0x05,
@@ -430,10 +462,11 @@ fn main() {
         ]
     });
 
+
     println!("loaded {} bytes from '{}'", binary.len(), path);
     println!("{}", "─".repeat(52));
 
-    run(); //run program
+    run(binary, ); //run program
 
 
 
