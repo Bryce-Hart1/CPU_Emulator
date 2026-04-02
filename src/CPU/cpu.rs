@@ -251,12 +251,13 @@ impl Cpu {
      * must be called over and over again. 
      */
     fn execute(&mut self, instruction: Option<ByteStr>, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit) {
+
         match instruction {
-            None => {
-                println!("No instruction to execute.");
-                return;
-            }
-            Some(instr) => match self.table.lookup(&instr) {
+        None => {
+            println!("No instruction to execute.");
+            return;
+        }
+        Some(instr) => match self.table.lookup(&instr) {
 
         Some(&"NOPERATION") => {
              /* do nothing */ 
@@ -267,63 +268,48 @@ impl Cpu {
         Some(&"CLRFLAGS") => {
                 self.flags.clear();
             }
-        Some(&"RETURN") =>{
-            let sp: u32 = self.regs.get(12 as u8); //stack pointer is 13 (in docs)
-            let value = ram_unit.fetch(sp as u8);
-            self.regs.set(13, sp.wrapping_add(1) as u32);
-            self.pc = value as u8;
-            }
+        Some(&"RETURN") => {
+            let sp = self.regs.get(13) as u8;
+            let return_addr = ram_unit.fetch(sp);   // read saved PC from top of stack
+            self.regs.set(13, sp.wrapping_add(1) as u32); // pop move SP back up
+            self.pc = return_addr as u8;
+        }
 
         //arithmetic and data movement
-
         Some(&"ADD") => {
             let byte2 = self.fetch(bin_file).unwrap();
-            let r1: String = byte2.grab_half(true);
-            let r2: String = byte2.grab_half(false);
-            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 + 
-            self.regs.get(helper::string_to_u8(r2)) as u32;
-            //set carry flag if needed
-            self.flags.carry = sum > u32::max_value();
-            self.regs.set(helper::string_to_u8(r1), sum);
-
-            }
-        Some(&"SUB") => {
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true));
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let sum: u32 = self.regs.get(r1) + self.regs.get(r2);
+            self.flags.carry = sum > u32::MAX;
+            self.regs.set(r1, sum);
+        }
+        Some(&"SUB") => { //might implement underflow here
             let byte2 = self.fetch(bin_file).unwrap();
-            let r1: String = byte2.grab_half(true);
-            let r2: String = byte2.grab_half(false);
-            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 - 
-            self.regs.get(helper::string_to_u8(r2)) as u32;
-            //sum is calculated, store
-            self.regs.set(helper::string_to_u8(r1), sum);       
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true));
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let sum: u32 = self.regs.get(r1).wrapping_sub(self.regs.get(r2));
+            self.regs.set(r1, sum);
         }
         Some(&"DIV") => {
-            let byte2: ByteStr = self.fetch(bin_file).unwrap();
-            let r1: String = byte2.grab_half(true);
-            let r2: String = byte2.grab_half(false);
-            let check_zero = helper::string_to_u8(r2); //if r2 is 0, we need to throw to avoid crash
-            if check_zero == 0{
+            let byte2 = self.fetch(bin_file).unwrap();
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true));
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            if self.regs.get(r2) == 0 {
                 self.flags.fault = true;
-                self.halted = true; //halt cpu to prevent crash
+                self.halted = true;
+                return;  // early exit so we don't divide by zero below
             }
-            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 / 
-            self.regs.get(helper::string_to_u8(r2)) as u32;
-            self.regs.set(helper::string_to_u8(r1), sum);       
-
+            let sum: u32 = self.regs.get(r1) / self.regs.get(r2);
+            self.regs.set(r1, sum);
         }
         Some(&"MULTI") => {
-            let byte2: ByteStr = self.fetch(bin_file).unwrap();
-            let r1: String = byte2.grab_half(true);
-            let r2: String = byte2.grab_half(false);
-            let check_zero = helper::string_to_u8(r2); //if r2 is 0, we need to throw to avoid crash
-            if check_zero == 0{
-                self.flags.fault = true;
-                self.halted = true; //halt cpu to prevent crash
-            }
-            let sum: u32 = self.regs.get(helper::string_to_u8(r1)) as u32 * 
-            self.regs.get(helper::string_to_u8(r2)) as u32;
-            //set carry flag if needed, if sum goes over
-            self.flags.carry = sum > u32::max_value();
-            self.regs.set(helper::string_to_u8(r1), sum);       
+            let byte2 = self.fetch(bin_file).unwrap();
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true));
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let sum: u32 = self.regs.get(r1) * self.regs.get(r2);
+            self.flags.carry = sum > u32::MAX;
+            self.regs.set(r1, sum);  
         }
         Some(&"OR") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
@@ -343,7 +329,7 @@ impl Cpu {
             let sum: u32 = val1 & val2;
             self.regs.set(r1, sum);
         }
-        Some(&"!OR") => { //XOR of 1 and 2 rtn to 1
+        Some(&"EOR") => { //XOR of 1 and 2 rtn to 1, this has to match the instruction set though
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
             let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
             let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
@@ -366,7 +352,7 @@ impl Cpu {
             let move_val = self.regs.get(r1);
             self.regs.set(r2, move_val);
         }
-        Some(&"MOVE&CLR") => {
+        Some(&"MOVEACLR") => { //same case with this one and EOR
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
             let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
             let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
@@ -390,7 +376,7 @@ impl Cpu {
             let reg_idx = u8::from_str_radix(&operand.grab_half(true), 2).unwrap();
             // Read from RAM at SP, then increment SP
             let sp    = self.regs.get(13) as u8;
-            let value = ram.read(sp);
+            let value = ram_unit.fetch(sp);
             self.regs.set(13, sp.wrapping_add(1) as u32);
             self.regs.set(reg_idx, value as u32);
         }
@@ -425,16 +411,36 @@ impl Cpu {
             if !self.flags.zero {
                 self.pc = addr.hash() as u8;
             }
-}
+        }
         Some(&"CALL") => {
+            let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused (padding)
+            let addr     = self.fetch(bin_file).unwrap(); // byte 3 = target address
 
+            // Push current PC onto the stack so RETURN knows where to come back
+            let sp = self.regs.get(13) as u8;
+            let new_sp = sp.wrapping_sub(1);
+            ram_unit.write(new_sp, self.pc as u32); // save return address
+            self.regs.set(13, new_sp as u32);       // update stack pointer
+
+            // Now jump
+            self.pc = addr.as_u8();
         }
+
         Some(&"JMPIFCRRY") => {
-
+            let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused
+            let addr     = self.fetch(bin_file).unwrap(); // byte 3 = target address
+            if self.flags.carry {
+                self.pc = addr.as_u8();
+            }
         }
-        Some(&"JMPIFFAULT") => {
 
-        }   
+        Some(&"JMPIFAULT") => {
+            let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused
+            let addr     = self.fetch(bin_file).unwrap(); // byte 3 = target address
+            if self.flags.fault {
+                self.pc = addr.as_u8();
+            }
+        }
         Some(&"LOAD") => {
             let byte2 = self.fetch(bin_file).unwrap();
             let reg: String = byte2.grab_half(false); //bottom is garbage
@@ -451,11 +457,16 @@ impl Cpu {
             let address: u8 = byte3.as_u8();
             ram_unit.write(address,value_on_bus);
         }     
-                Some(_) =>{ //somehow, binary has been added that was not intended
-                    println!("Unknown instruction, halting.");
-                    self.halted = true;            
-                }
+        Some(_) => {
+            println!("Unknown instruction, halting.");
+            self.halted = true;
+        }
+        None => {
+            println!("Unrecognized opcode, halting.");
+            self.halted = true;
+        }
             }
+
         }
     }
 
@@ -468,32 +479,52 @@ impl Cpu {
         
 }
 
-
-/**
- * run actual implementation 
- * create a ram, CPU, and screen
- */
-fn run(binary_file: Vec<u8>){ //IMPORTANT -> NEED A WAY TO CONVERT
-    let mut cpu = Cpu::new(); // create the CPU
-    let mut ram = RAM::ram::RamUnit::new(); // and ram
-    cpu.run(binary_file, &ram);
-
+/// Convert a flat string of '0'/'1' chars into a Vec<ByteStr>,
+/// one ByteStr per 8-character chunk.
+fn chars_to_bytestrs(chars: &[char]) -> Vec<ByteStr> {
+    chars
+        .chunks(8)
+        .map(|chunk| {
+            // Pad to 8 if the file isn't a multiple of 8 (shouldn't happen, but safe)
+            let mut s = String::with_capacity(8);
+            for c in chunk { s.push(*c); }
+            while s.len() < 8 { s.push('0'); }
+            ByteStr::new(&s)
+        })
+        .collect()
 }
 
+/// Entry point: load a binary text file (all '0'/'1'), build the CPU + RAM, run.
+fn run(char_stream: Vec<char>) {
+    let bin_file = chars_to_bytestrs(&char_stream);
+
+    let mut cpu = Cpu::new();
+    let mut ram = RAM::ram::RamUnit::new();
+
+    cpu.run(&bin_file, &mut ram);
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin"); //this should be the binary is coming from
+    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin");
 
-    let binary: Vec<char> = fs::read(path).unwrap_or_else(|_| {
-        binary = fallback_starting_operation();
+    // Read the file as raw bytes, keep only '0' and '1' chars
+    let char_stream: Vec<char> = fs::read_to_string(path)
+        .unwrap_or_else(|_| {
+            eprintln!("Warning: could not read '{}', using built-in fallback program.", path);
+            // fallback returns a String of '0'/'1'
+            fallback_starting_operation().iter().collect()
+        })
+        .chars()
+        .filter(|c| *c == '0' || *c == '1')   // strip newlines, spaces, etc.
+        .collect();
 
-
-    println!("loaded {} bytes from '{}'", binary.len(), path);
+    println!("Loaded {} bits ({} instructions) from '{}'",
+        char_stream.len(),
+        char_stream.len() / 8,
+        path
+    );
     println!("{}", "─".repeat(52));
 
-    run(binary, ); //run program
-
-
-    }
+    run(char_stream);
 }
