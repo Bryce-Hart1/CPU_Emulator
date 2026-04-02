@@ -1,7 +1,4 @@
 
-use std::fs;
-use std::env;
-
 pub struct RamUnit{
     locations : [[u32; 16]; 16],
 }
@@ -13,14 +10,14 @@ impl RamUnit{
     pub fn new() -> Self {
         Self { locations: [[0; Self::GRID]; Self::GRID] }
     }    //takes in a 8 bit adr and returns value at that location
-    fn fetch(&self, requested : u32) -> u32{
+    pub fn fetch(&self, requested : u8) -> u32{ 
         let row = (requested % 16) as usize;
         let col = (requested / 16) as usize;
         return self.locations[row][col];
     }
     //Assumes the address is correct for example - 
     //if I give 256, 256 / 16 = 16 - out of bounds
-    fn write(&mut self, addr : u8, data : u32){
+    pub fn write(&mut self, addr : u8, data : u32){
         let row = (addr % 16) as usize;
         let col = (addr / 16) as usize;   
         self.locations[row][col] = data;
