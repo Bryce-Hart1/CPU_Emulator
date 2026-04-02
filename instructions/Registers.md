@@ -14,6 +14,8 @@ General purpose registers
 Frame Pointer
 # R13 
 Stack pointer
+Stack has a decending pattern, and the stack pointer keeps track of the top (decending part) of the stack
+starts at the top of RAM (which is FF, or u8 max.) Is popped off top by the return instruction
 # R14
 Link Registor
 # P15 

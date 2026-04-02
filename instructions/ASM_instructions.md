@@ -53,34 +53,55 @@ Includes 8 instructions: ADD, SUB, DIV, MULTI, OR, AND, !OR, NOT
 0100 0000 ADD R1 (4 bits) R2 (4 bits)
 -----------------------------------------------
 
-Adds R2 into R1 and sets R2 to 0
+Adds R2 into R1 and leaves r2 unchanged.
+
 
 0100 0001 SUB R1 (4 bits ) R2 (4 bits)
 -----------------------------------------------
-
+Subtracts r2 from r1, and stores the result in r1, leaving 
+r2 unchanged
 
 0100 0010 DIV R1 (4 bits ) R2 (4 bits)
 -----------------------------------------------
+Divides r1 by r1, and stores the result in r1, leaving 
+r2 unchanged
 
 
 0100 0011 MULTI R1 (4 bits ) R2 (4 bits)
 -----------------------------------------------
+multiplies r1 by r2, and stores the result in r1, leaving
+r2 unchanged
 
 
 0100 0100 OR 
 -----------------------------------------------
-
+inclusive or of 2 operations
+0 + 0 = 0
+0 + 1 = 1
+1 + 1 = 1
+leaves value in reg2.
 
 0100 0101 AND 
 -----------------------------------------------
+must have both bits flipped to have a 1
+0 + 0 = 0
+0 + 1 = 0
+1 + 1 = 1
 
-
-0100 0110 !OR (XOR)
+0100 0110 !OR (XOR) (reg1 (4 bytes)) (reg2 (4 bytes))
 -----------------------------------------------
+exclusive or must be different bits to have a one
+Stored in r1 and does not clear r2
+0 + 0 = 0
+0 + 1 = 1
+1 + 1 = 0
 
-
-0100 0111 NOT
+0100 0111 NOT (reg1 4 bytes) (4 byte buffer)
 -----------------------------------------------
+first 4 bytes contains a register, the last 4 can be discarded as a buffer
+reverses bits in register 1.
+0 = 1
+1 = 0
 
 ```
 
@@ -88,12 +109,14 @@ Adds R2 into R1 and sets R2 to 0
 ## Data Movement (2 bytes)
 Includes 4 instructions: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
 ```
-0100 1000 MOVE
+0100 1000 MOVE (reg1 (4 bytes)) (reg2 (4 bytes))
 -----------------------------------------------
+moves reg1 TO reg2. does not clear reg1.
 
 
-0100 1001 MOVE&CLR
+0100 1001 MOVE&CLR (reg1 (4 bytes)) (reg2 (4 bytes))
 -----------------------------------------------
+moves reg1 TO reg2. does not clear reg1.
 
 
 0100 1010 PUSH
