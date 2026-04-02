@@ -46,3 +46,43 @@ pub fn string_to_u32(passed : String) -> u32{
     return rtn;
 
 }
+//returns a 32 char string of a binary string
+pub fn u32_to_string(passed: u32) -> String{
+    let mut rtn: String = String::new();
+    let mut div_amt: u32 = (2u32).pow(31 as u32); //2^31 for first bit
+    for i in 0..32{
+        if passed / div_amt != 0 {
+            rtn.push('1');                
+        }else{
+            rtn.push('0');                
+        }
+        div_amt = div_amt / 2;
+        }    
+    return rtn;
+}
+
+pub fn u8_to_string(passed: u8) -> String{
+    let mut rtn: String = String::new();
+    let mut div: u8 = 128;
+     for i in 0..8{
+        if passed / 8 == 1{
+            rtn.push('1');
+        }else{
+            rtn.push('0');
+        }
+        div /= 2;
+    }
+    return rtn;
+}
+
+pub fn return_opp_string(passed: String) -> String{
+    let mut rtn = String::new();
+    for i in 0..passed.len(){
+        if passed.chars().nth(i) != Some('0'){ //then it must == 1, return 0
+            rtn.push('0');
+        }else{
+            rtn.push('1');
+        }
+    }
+    return rtn;
+}
