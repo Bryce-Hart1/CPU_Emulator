@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use crate::helper;
 use crate::IO;
 use crate::RAM;
+use crate::helper::fallback_starting_operation;
 #[derive(Copy, Clone)]
 struct ByteStr{
     bytes: [char; 8],
@@ -250,10 +251,16 @@ impl Cpu {
      * must be called over and over again. 
      */
     fn execute(&mut self, instruction: Option<ByteStr>, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit) {
-        match self.table.lookup(&instruction) {
+        match instruction {
+            None => {
+                println!("No instruction to execute.");
+                return;
+            }
+            Some(instr) => match self.table.lookup(&instr) {
 
-        Some(&"NOPERATION") => { /* do nothing */ }
-
+        Some(&"NOPERATION") => {
+             /* do nothing */ 
+            }
         Some(&"HALT") => {
                 self.halted = true;
             }
@@ -261,7 +268,10 @@ impl Cpu {
                 self.flags.clear();
             }
         Some(&"RETURN") =>{
-
+            let sp: u32 = self.regs.get(12 as u8); //stack pointer is 13 (in docs)
+            let value = ram_unit.fetch(sp as u8);
+            self.regs.set(13, sp.wrapping_add(1) as u32);
+            self.pc = value as u8;
             }
 
         //arithmetic and data movement
@@ -333,11 +343,21 @@ impl Cpu {
             let sum: u32 = val1 & val2;
             self.regs.set(r1, sum);
         }
-        Some(&"!OR") => {
-
+        Some(&"!OR") => { //XOR of 1 and 2 rtn to 1
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
+            let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
+            let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
+            let val1 = self.regs.get(r1);
+            let val2: u32 = self.regs.get(r2);
+            let sum: u32 = val1 ^ val2;
+            self.regs.set(r1, sum);         
         }
         Some(&"NOT") => {
-
+            let byte2: ByteStr = self.fetch(bin_file).unwrap();
+            let reg: u8 = helper::string_to_u8(byte2.grab_half(false)); //bottom half is a buffer, per instructions
+            let value: String = helper::u32_to_string(self.regs.get(reg));
+            let sum = helper::string_to_u32(helper::return_opp_string(value)); //return oppisite in u32
+            self.regs.set(reg, sum);
         }
         Some(&"MOVE") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
@@ -355,10 +375,24 @@ impl Cpu {
             self.regs.set(r1, self.regs.get(0));
         }
         Some(&"PUSH") => {
-
+            let operand = self.fetch(bin_file).unwrap();
+            let reg_idx = u8::from_str_radix(&operand.grab_half(true), 2).unwrap();
+            let value: u32   = self.regs.get(reg_idx);
+            // Decrement SP first, then write to RAM at SP
+            let sp = self.regs.get(13) as u8;
+            let new_sp = sp.wrapping_sub(1);
+            self.regs.set(13, new_sp as u32);
+            ram_unit.write(new_sp, value);
         }
-        Some(&"POP") => {
 
+        Some(&"POP") => {
+            let operand = self.fetch(bin_file).unwrap();
+            let reg_idx = u8::from_str_radix(&operand.grab_half(true), 2).unwrap();
+            // Read from RAM at SP, then increment SP
+            let sp    = self.regs.get(13) as u8;
+            let value = ram.read(sp);
+            self.regs.set(13, sp.wrapping_add(1) as u32);
+            self.regs.set(reg_idx, value as u32);
         }
         //Load and jumps
         Some(&"LOADIMM") => {
@@ -372,14 +406,26 @@ impl Cpu {
 
         }
         Some(&"JMP") => {
-
+            let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused for JMP
+            let addr     = self.fetch(bin_file).unwrap(); // byte 3 = target address
+            self.pc = addr.hash() as u8;
         }
-        Some(&"JMPIF0") => {
 
+        Some(&"JMPIF0") => { //jump if zero
+            let _operand = self.fetch(bin_file).unwrap();
+            let addr     = self.fetch(bin_file).unwrap();
+            if self.flags.zero {
+                self.pc = addr.hash() as u8;
+            }
         }
-        Some(&"JMPIF!0") => {
 
-        }
+        Some(&"JMPIF!0") => { // jump if not zero
+            let _operand = self.fetch(bin_file).unwrap();
+            let addr     = self.fetch(bin_file).unwrap();
+            if !self.flags.zero {
+                self.pc = addr.hash() as u8;
+            }
+}
         Some(&"CALL") => {
 
         }
@@ -405,10 +451,11 @@ impl Cpu {
             let address: u8 = byte3.as_u8();
             ram_unit.write(address,value_on_bus);
         }     
-        None => {
-            println!("Unknown instruction, halting.");
-            self.halted = true;
-        }
+                Some(_) =>{ //somehow, binary has been added that was not intended
+                    println!("Unknown instruction, halting.");
+                    self.halted = true;            
+                }
+            }
         }
     }
 
@@ -439,28 +486,7 @@ fn main() {
     let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin"); //this should be the binary is coming from
 
     let binary: Vec<char> = fs::read(path).unwrap_or_else(|_| {
-        // Fallback: hardcoded program so the scaffolding runs standalone
-        // LOADIMM R1, 0x0A
-        // LOADIMM R2, 0x05
-        // ADD R1, R2
-        // HALT
-        let instr1: String =  0x80;
-        let instr2: u32 =  0x10;
-        let instr3: u32 =  0x0A;
-        let instr4: u32 =  0x80;
-        let instr5: u32 =  0x20;
-        let instr6: u32 =  0x05;
-        let instr7: u32 =  0x40;
-        let instr8: u32 =  0x12;
-        let instr9: u32 =  0x01;
-
-        vec![
-            0x80, 0x10, 0x0A,
-            0x80, 0x20, 0x05,
-            0x40, 0x12,
-            0x01,
-        ]
-    });
+        binary = fallback_starting_operation();
 
 
     println!("loaded {} bytes from '{}'", binary.len(), path);
@@ -469,5 +495,5 @@ fn main() {
     run(binary, ); //run program
 
 
-
+    }
 }
