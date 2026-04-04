@@ -1,6 +1,5 @@
 //from myLib - ruststd
 
-use std::array;
 
 //hashes a String type as a unsigned 4 byte int
 pub fn str(s: &String) -> u32 {
@@ -90,17 +89,11 @@ pub fn return_opp_string(passed: String) -> String{
 }
 
 pub fn fallback_starting_operation() -> Vec<char> {
-    // Fallback: hardcoded program so the scaffolding runs standalone
-    // LOADIMM R1, 25
-    // LOADIMM R2, -26
-    // ADD R1, R2
-    // HALT
-    let mut rtnStr: Vec<char> = Vec::new();
-    let str1: String = &"10000000" + &"00000000" + &"00011001"
-    + &"10000000" + &"00011000" + &"00011010" 
-    + &"01000000" + &"00000001";
-    for c in str1.chars() {
-        rtnStr.push(c);
-    }
-    return rtnStr;
+    let program = concat!(
+        "10000000", "00000001", "00011001",   // LOADIMM R1, 25
+        "10000000", "00010000", "00011010",   // LOADIMM R2, 26
+        "01000000", "00010001",               // ADD R1, R2
+        "00000001"                            // HALT
+    );
+    program.chars().collect()
 }
