@@ -60,6 +60,7 @@ impl RGB {
 
     //misc 
     pub screen_on: CurrentScreenOn,
+    pub step_just_done: String,
 }
 
 impl CpuCam{
@@ -88,6 +89,7 @@ impl CpuCam{
             wire_cpu_to_ram:    false,
 
             screen_on: CurrentScreenOn::HalfAndHalf,
+            step_just_done: "None".to_string(),
         }
     }
 
@@ -123,6 +125,11 @@ impl CpuCam{
             self.keys_held[ind as usize]    = held;
             self.keys_pressed[ind as usize] = pressed;
         }
+    }
+
+    //set the last instruction done by current cpu 
+    pub fn set_last_instr(&mut self, msg: &str){
+        self.last_instruction = msg.to_string();
     }
 
     // ── Called once per frame AFTER rendering to clear one-shot signals ──────
@@ -180,7 +187,7 @@ pub struct RamSnapshot {
 
 /**
  * For main: picks what type to draw, between half&half, tech, or normal views
- * 
+ * as soon as the user picks a new option in main, starts drawing the next
  */
 pub fn ray_draw_frame(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_w: i32, screen_h: i32) {
     match camera.screen_on {
@@ -195,7 +202,7 @@ pub fn ray_draw_frame(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_w: i32, 
 // Techinical                                           
 fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, screen_height: i32){
 
-    pub fn draw_header(d: &mut RaylibDrawHandle, screen_w: i32, halted: bool, fault: bool) {
+    fn draw_header(d: &mut RaylibDrawHandle, screen_w: i32, halted: bool, fault: bool) {
         // Background bar
         d.draw_rectangle(0, 0, screen_w, HEADER_H, COLOR_BG_DEEP);
         d.draw_line(0, HEADER_H - 1, screen_w, HEADER_H - 1, COLOR_BORDER);
@@ -216,7 +223,7 @@ fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, 
     }
 
     // ── Blueprint grid background ────────────────────────────────────────────────
-    pub fn draw_grid(d: &mut RaylibDrawHandle, screen_w: i32, screen_h: i32) {
+    fn draw_grid(d: &mut RaylibDrawHandle, screen_w: i32, screen_h: i32) {
         d.clear_background(COLOR_BG_DEEP);
         let spacing = 40;
         // vertical lines
@@ -277,7 +284,7 @@ fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, 
     }
 
     // ── CPU panel ────────────────────────────────────────────────────────────────
-    pub fn draw_cpu_core(
+    fn draw_cpu_core(
         d:        &mut RaylibDrawHandle,
         snap:     &CpuSnapshot,
         origin_x: i32,
@@ -345,7 +352,7 @@ fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, 
     }
 
     // ── RAM panel ────────────────────────────────────────────────────────────────
-    pub fn draw_ram(
+    fn draw_ram(
         d:        &mut RaylibDrawHandle,
         snap:     &RamSnapshot,
         origin_x: i32,
@@ -407,12 +414,97 @@ fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, 
 
 
 fn draw_half_and_half(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, screen_height: i32){
-    d.draw_circle(30, 30, 4.0, COLOR_BLUE_FADE_1);
-
+    d.clear_background(COLOR_BG_DEEP);
+    
+    let half_width = screen_width / 2;
+    
+    // ── LEFT HALF: Display Screen ───────────────────────────────────────────
+    d.draw_rectangle(0, 0, half_width, screen_height, Color::BLACK);
+    
+    let screen_size = 255;
+    let available_size = half_width.min(screen_height);
+    let pixel_size = (available_size - 40) / screen_size;
+    
+    if pixel_size > 0 {
+        let total_screen_size = pixel_size * screen_size;
+        let offset_x = (half_width - total_screen_size) / 2;
+        let offset_y = (screen_height - total_screen_size) / 2;
+        
+        for y in 0..screen_size {
+            for x in 0..screen_size {
+                let pixel_color = camera.screen[x as usize][y as usize].to_raylib_color();
+                let px = offset_x + x * pixel_size;
+                let py = offset_y + y * pixel_size;
+                d.draw_rectangle(px, py, pixel_size, pixel_size, pixel_color);
+            }
+        }
+    }
+    
+    // ── RIGHT HALF: CPU and RAM ─────────────────────────────────────────────
+    let right_start = half_width;
+    
+    // ── CPU: 4x4 grid of registers ──────────────────────────────────────────
+    let cpu_margin = 40;
+    let cpu_x = right_start + cpu_margin;
+    let cpu_y = cpu_margin;
+    
+    let reg_cell_w = 80;
+    let reg_cell_h = 40;
+    let reg_gap = 8;
+    
+    for row in 0..4 {
+        for col in 0..4 {
+            let reg_idx = row * 4 + col;
+            let cx = cpu_x + col * (reg_cell_w + reg_gap);
+            let cy = cpu_y + row * (reg_cell_h + reg_gap);
+            
+            let value = if reg_idx == 15 {
+                camera.pc as u32
+            } else {
+                camera.registers[reg_idx as usize]
+            };
+            
+            let (bg, border) = if value != 0 {
+                (Color::new(0, 50, 75, 255), COLOR_CELL_ACTIVE)
+            } else {
+                (COLOR_CELL_EMPTY, COLOR_GRID_LINE)
+            };
+            
+            d.draw_rectangle(cx, cy, reg_cell_w, reg_cell_h, bg);
+            d.draw_rectangle_lines(cx, cy, reg_cell_w, reg_cell_h, border);
+        }
+    }
+    
+    // ── RAM: 16x16 grid of small squares ────────────────────────────────────
+    let ram_y = cpu_y + 4 * (reg_cell_h + reg_gap) + 60;
+    let ram_x = cpu_x;
+    
+    let ram_cell = 14;
+    let ram_gap = 2;
+    
+    for row in 0..16 {
+        for col in 0..16 {
+            let cx = ram_x + col * (ram_cell + ram_gap);
+            let cy = ram_y + row * (ram_cell + ram_gap);
+            
+            let val = camera.ram[row as usize][col as usize];
+            
+            let (bg, border) = if val != 0 {
+                (Color::new(0, 50, 75, 255), COLOR_CELL_ACTIVE)
+            } else {
+                (COLOR_CELL_EMPTY, COLOR_GRID_LINE)
+            };
+            
+            d.draw_rectangle(cx, cy, ram_cell, ram_cell, bg);
+            d.draw_rectangle_lines(cx, cy, ram_cell, ram_cell, border);
+        }
+    }
 }
 
 
 fn draw_normal(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, screen_height: i32){
     
     d.draw_circle(30, 30, 4.0, COLOR_BLUE_DESIGN);
+    d.draw_circle(30, 70, 4.0, COLOR_RED_DEEP);
+
 }
