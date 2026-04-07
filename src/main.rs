@@ -1,12 +1,15 @@
+#![allow(dead_code, non_snake_case, unused, non_upper_case_globals, non_camel_case_types)]
+
+
 mod CPU;
 mod IO;
 mod RAM;
 mod colors;
 mod helper;
-mod baseplate;
 mod render;
 
 use raylib::prelude::*;
+use raylib::consts::KeyboardKey::*;
 use render::{CpuSnapshot, RamSnapshot};
 
 fn main() {
@@ -41,13 +44,22 @@ fn main() {
     let ram_y   = 70;
     let cpu_x   = 660;   // roughly center given RAM panel width ~620
     let cpu_y   = 70;
-
+    let mut cam: render::CpuCam = render::CpuCam::new();
+    
     while !rl.window_should_close() {
-        let mut d = rl.begin_drawing(&thread);
+        if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) {
+            if rl.is_key_pressed(KeyboardKey::KEY_ONE) {
+                cam.screen_on = render::CurrentScreenOn::HalfAndHalf;
+            }
+            if rl.is_key_pressed(KeyboardKey::KEY_TWO) {
+                cam.screen_on = render::CurrentScreenOn::Techinical;
+            }
+            if rl.is_key_pressed(KeyboardKey::KEY_THREE) {
+                cam.screen_on = render::CurrentScreenOn::Normal;
+            }
+        }
 
-        render::draw_grid(&mut d, screen_w, screen_h);
-        render::draw_header(&mut d, screen_w, cpu_snap.halted, cpu_snap.fault);
-        render::draw_ram(&mut d, &ram_snap, ram_x, ram_y);
-        render::draw_cpu_core(&mut d, &cpu_snap, cpu_x, cpu_y);
+        let mut d = rl.begin_drawing(&thread);
+        render::ray_draw_frame(&mut d, &cam, screen_w, screen_h);
     }
 }
