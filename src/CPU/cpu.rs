@@ -5,6 +5,7 @@ use crate::helper;
 use crate::IO;
 use crate::RAM;
 use crate::helper::fallback_starting_operation;
+use crate::render::CpuCam;
 #[derive(Copy, Clone)]
 struct ByteStr{
     bytes: [char; 8],
@@ -88,7 +89,7 @@ impl ByteStr{
     }
 
     pub fn at(&self, ind: usize) -> bool {
-        if ind > 7 || ind < 0{
+        if ind > 7{
             return false; //could return option type, but calling out of bounds is programmer error
         }
         if self.bytes[ind] != '0' {
@@ -250,7 +251,7 @@ impl Cpu {
      * execution of a single instruction. This does exactly one step. Think that this function
      * must be called over and over again. 
      */
-    fn execute(&mut self, instruction: Option<ByteStr>, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit) {
+    fn execute(&mut self, instruction: Option<ByteStr>, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit, cam: &mut CpuCam) {
 
         match instruction {
         None => {
@@ -261,18 +262,23 @@ impl Cpu {
 
         Some(&"NOPERATION") => {
              /* do nothing */ 
+            cam.set_last_instr(&"NOPERATION");
             }
         Some(&"HALT") => {
                 self.halted = true;
+                cam.set_last_instr(&"HALT");
+                cam.halted = true;
             }
         Some(&"CLRFLAGS") => {
                 self.flags.clear();
+                //update flags if we even render them at all
             }
         Some(&"RETURN") => {
             let sp = self.regs.get(13) as u8;
             let return_addr = ram_unit.fetch(sp);   // read saved PC from top of stack
             self.regs.set(13, sp.wrapping_add(1) as u32); // pop move SP back up
             self.pc = return_addr as u8;
+            cam.set_last_instr(&"RETURN");
         }
 
         //arithmetic and data movement
@@ -283,6 +289,8 @@ impl Cpu {
             let sum: u32 = self.regs.get(r1) + self.regs.get(r2);
             self.flags.carry = sum > u32::MAX;
             self.regs.set(r1, sum);
+            cam.reg_set(r1, sum); //display it, only reg one needs updated
+            
         }
         Some(&"SUB") => { //might implement underflow here
             let byte2 = self.fetch(bin_file).unwrap();
@@ -470,10 +478,10 @@ impl Cpu {
         }
     }
 
-    fn run(&mut self, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit){
+    fn run(&mut self, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit, cam: &mut CpuCam){
         while !self.halted {
             let next_instruction = self.fetch(bin_file);
-            self.execute(next_instruction, bin_file, ram_unit);
+            self.execute(next_instruction, bin_file, ram_unit, cam);
         }
     }
         
@@ -500,8 +508,8 @@ fn run(char_stream: Vec<char>) {
 
     let mut cpu = Cpu::new();
     let mut ram = RAM::ram::RamUnit::new();
-
-    cpu.run(&bin_file, &mut ram);
+    let mut cam: CpuCam = CpuCam::new();
+    cpu.run(&bin_file, &mut ram, &mut cam);
 }
 
 fn main() {
