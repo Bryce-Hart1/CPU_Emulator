@@ -304,10 +304,222 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, false, true]
     ];   
 
+    //ascii 58 colon :
+    let _colon = 
+    vec![
+    vec![false],
+    vec![true],
+    vec![false],
+    vec![true],
+    vec![false]
+    ];    
+    map.insert(':', _colon);
+
+    //ascii 59 ; semicolon
+    let _semicolon = 
+    vec![
+    vec![false, false],
+    vec![false, true],
+    vec![false, false],
+    vec![false, true],
+    vec![true, false]
+    ];       
+    //ascii 60 < 
+    let _greater_than =
+    vec![
+    vec![false, false],
+    vec![false, true],
+    vec![true, false],
+    vec![false, true],
+    vec![false, false]
+    ];       
+    //ascii 61 =
+    let _equals =
+    vec![
+    vec![false, false],
+    vec![true, true],
+    vec![false, false],
+    vec![true, true],
+    vec![false, false]
+    ];   
+    //ascii 62 > 
+    let _less_than =
+    vec![
+    vec![false, false],
+    vec![true, false],
+    vec![false, true],
+    vec![true, false],
+    vec![false, false]
+    ];    
+    //ascii 63 ?
+    let _question = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![false, true, false],
+    vec![false, false, false],
+    vec![false, true, false]
+    ];   
+    //ascii 64 @
+    let _at = 
+    vec![
+    vec![false, true, true, true, false],
+    vec![true, false, false, false, true],
+    vec![true, false, true, true, true],
+    vec![true, false, true, false, true],
+    vec![false, true, true, true, false]
+    ];  
+    //ascii 65 A
+    let _A = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, false, true]
+    ];
 
 
+    let _B = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, false],
+    vec![true, false, true],
+    vec![true, true, true]
+    ];   
 
 
+    let _C = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, true, true]
+    ];   
+
+
+    let _D = 
+    vec![
+    vec![true, true, false],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, true, false]
+    ];   
+
+
+    let _E = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, true, true]
+    ];   
+
+
+    let _F = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, false, false]
+    ];   
+
+    let _G = 
+    vec![
+    vec![false, true, true, true],
+    vec![true, false, false, false],
+    vec![true, false, true, true],
+    vec![true, false, false, true],
+    vec![false, true, true, false]
+    ];   
+    let _H = 
+    vec![
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, false, true]
+    ];   
+
+    //ascii 73 I
+    let _I =
+    vec![
+    vec![true, true, true],
+    vec![false, true, false],
+    vec![false, true, false],
+    vec![false, true, false],
+    vec![true, true, true]
+    ];
+
+    let _J = 
+    vec![
+    vec![false, false, true],
+    vec![false, false, true],
+    vec![false, false, true],
+    vec![true, false, true],
+    vec![true, true, true]
+    ];    
+    let _K =
+    vec![
+    vec![true, false, true],
+    vec![true, true, false],
+    vec![true, false, false],
+    vec![true, true, false],
+    vec![true, false, true]
+    ];     
+    let _L =
+    vec![
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, true, true]
+    ];     
+    let _M = 
+    vec![
+    vec![true, false, false, false, true],
+    vec![true, true, false, true, true],
+    vec![true, false, true, false, true],
+    vec![true, false, true, false, true],
+    vec![true, false, false, false, true]
+    ];   
+    //ascii 78
+    let _N = 
+    vec![
+    vec![true, false, false, true],
+    vec![true, true, false, true],
+    vec![true, false, true, true],
+    vec![true, false, false, true],
+    vec![true, false, false, true]
+    ];   
+
+    //ascii 79 O
+    let _O = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, true, true]
+    ];     
+
+    // ascii 80 P
+    let _P = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, false, false]
+    ];     
+    
+     
+       
 
 
     return map.get(&input)
