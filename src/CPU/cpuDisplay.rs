@@ -11,7 +11,7 @@ use std::collections::HashMap;
  * all chars have height of 5
  * This is current "standard" font for cpuEM
  * Should contain all printable ASCII values, if the char "input" is out of range it will print
- * an unknown char, 
+ * an unknown char, _unknown_char
  * 
  */
 pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
@@ -166,6 +166,8 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, true],
     vec![true, false]
     ];   
+
+
     //ascii 45 - 
     let _minus = 
     vec![
@@ -175,6 +177,8 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, false],
     vec![false, false]
     ];   
+
+
     //ascii 46 .
     let _period = 
     vec![
@@ -184,6 +188,8 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false],
     vec![true]
     ];   
+
+
     //ascii 47 /
    let _l_slash = 
     vec![
@@ -193,9 +199,111 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, true, false],
     vec![true, false, false]
     ];  
+
+
     //ascii 48 0
+    let _zero = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, true, true]
+    ];     
+
+
     //ascii 49 1
+    let _one = 
+    vec![
+    vec![false, true],
+    vec![true, true],
+    vec![false, true],
+    vec![false, true],
+    vec![false, true]
+    ];    
+
     //ascii 50 2
+    let _two = 
+    vec![
+    vec![false, true, false],
+    vec![true, false, true],
+    vec![false, true, true],
+    vec![true, false, false],
+    vec![true, true, true]
+    ];     
+
+
+    //ascii 51 3 
+    let _three =
+    vec![
+    vec![true, true, true],
+    vec![false, false, true],
+    vec![true, true, true],
+    vec![false, false, true],
+    vec![true, true, true]
+    ];    
+
+
+    //ascii 52 4
+    let _four =
+    vec![
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, true, true],
+    vec![false, false, true],
+    vec![false, false, true]
+    ];    
+
+
+    let _five = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![false, true, true],
+    vec![false, false, true],
+    vec![true, true, true]
+    ];    
+
+
+    let _six = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, true]
+    ];   
+
+
+    let _seven = 
+    vec![
+    vec![true, true, true],
+    vec![false, false, true],
+    vec![false, true, false],
+    vec![true, false, false],
+    vec![true, false, false]
+    ];    
+
+
+    let _eight = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, true]
+    ];    
+
+    //ascii 57: 9
+    let _nine = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, true],
+    vec![false, false, true],
+    vec![false, false, true]
+    ];   
+
 
 
 
