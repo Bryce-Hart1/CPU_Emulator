@@ -1,14 +1,12 @@
-
-
 #[derive(Copy, Clone)]
-struct RGB(u8, u8, u8);
+pub struct RGB(u8, u8, u8);
 
 
-struct Screen{
+pub struct Screen{
     position : [[RGB; 255]; 255]
 
 }
-struct ScreenWrite{
+pub struct ScreenWrite{
     x : u8,
     y : u8,
     value : RGB,

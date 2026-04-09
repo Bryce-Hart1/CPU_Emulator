@@ -1,2 +1,2 @@
-mod screen;
+pub(crate) mod screen;
 mod keyboard;
