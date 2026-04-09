@@ -1,8 +1,43 @@
+use crate::IO;
 
 // Helps with things like font rendering, when the cpu writes to the screen address, values can be mapped here.
 //when a unknown value is written into screen.rs, it can call apon functions here to help
 
 use std::collections::HashMap;
+
+
+
+
+
+
+
+
+
+
+/**
+ * Void function that takes in arguements to draw at the current x and y the message. This will find a way to print it without clipping
+ * This allows for simplicity for writing text to the screen in the simulation. may change later
+ */
+pub fn screen_request_to_draw_at(x: u8, y: u8, msg: &str){
+    for i in 0..msg.len(){
+        let c: char = msg.chars().nth(i).unwrap();
+        let map = what_is_char(c);
+        for i in 0..map.len(){
+            for j in 0..map[i].len(){
+
+            }
+        }
+
+
+
+
+
+    }
+}
+
+
+
+
 
 
 /**
@@ -517,9 +552,88 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![true, false, false],
     vec![true, false, false]
     ];     
-    
-     
-       
+
+    let _Q = 
+    vec![
+    vec![false, true, false, false],
+    vec![true, false, true, false],
+    vec![true, false, true, false],
+    vec![true, false, true, false],
+    vec![false, true, false, true]
+    ];    
+    let _R = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, true],
+    vec![true, true, true],
+    vec![true, true, false],
+    vec![true, false, true]
+    ];    
+    let _S = 
+    vec![
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![true, true, true],
+    vec![false, false, true],
+    vec![true, true, true]
+    ];    
+    let _T = 
+    vec![
+    vec![true, true, true],
+    vec![false, true, false],
+    vec![false, true, false],
+    vec![false, true, false],
+    vec![false, true, false]
+    ];       
+    let _U = 
+    vec![
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, true, true]
+    ];   
+    let _V = 
+    vec![
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![false, true, false]
+    ];   
+    let _W = 
+    vec![
+    vec![true, false, true, false, true],
+    vec![true, false, true, false, true],
+    vec![true, true, false, true, true],
+    vec![true, true, false, true, true],
+    vec![true, false, false, false, true]
+    ];   
+    let _X = 
+    vec![
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![false, true, false],
+    vec![true, false, true],
+    vec![true, false, true]
+    ];         
+    let _Y = 
+    vec![
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![false, true, false],
+    vec![false, true, false],
+    vec![false, true, false]
+    ];       
+      
+    let _Z = 
+    vec![
+    vec![true, true, true],
+    vec![false, true, true],
+    vec![false, true, false],
+    vec![true, false, false],
+    vec![true, true, true]
+    ];         
 
 
     return map.get(&input)
@@ -538,5 +652,5 @@ pub fn add_padding(x: u8, y: u8) -> Vec<Vec<bool>>{
         rtn.push(line);
     }
 
-    rtn
+    return rtn;
 }

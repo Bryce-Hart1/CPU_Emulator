@@ -6,6 +6,8 @@ use crate::IO;
 use crate::RAM;
 use crate::helper::fallback_starting_operation;
 use crate::render::CpuCam;
+use crate::bios;
+
 #[derive(Copy, Clone)]
 struct ByteStr{
     bytes: [char; 8],
@@ -290,6 +292,7 @@ impl Cpu {
             self.flags.carry = sum > u32::MAX;
             self.regs.set(r1, sum);
             cam.reg_set(r1, sum); //display it, only reg one needs updated
+            cam.set_last_instr(&"ADD");
             
         }
         Some(&"SUB") => { //might implement underflow here
@@ -298,6 +301,7 @@ impl Cpu {
             let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
             let sum: u32 = self.regs.get(r1).wrapping_sub(self.regs.get(r2));
             self.regs.set(r1, sum);
+            cam.reg_set(r1, sum);// 2 doesnt change
         }
         Some(&"DIV") => {
             let byte2 = self.fetch(bin_file).unwrap();
@@ -306,10 +310,13 @@ impl Cpu {
             if self.regs.get(r2) == 0 {
                 self.flags.fault = true;
                 self.halted = true;
+                cam.halted = true;
+                cam.fault = true;
                 return;  // early exit so we don't divide by zero below
             }
             let sum: u32 = self.regs.get(r1) / self.regs.get(r2);
             self.regs.set(r1, sum);
+            cam.reg_set(r1, sum);
         }
         Some(&"MULTI") => {
             let byte2 = self.fetch(bin_file).unwrap();
@@ -318,6 +325,9 @@ impl Cpu {
             let sum: u32 = self.regs.get(r1) * self.regs.get(r2);
             self.flags.carry = sum > u32::MAX;
             self.regs.set(r1, sum);  
+            //need to add cam for carry
+            cam.reg_set(r1, sum);
+ 
         }
         Some(&"OR") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
@@ -326,7 +336,10 @@ impl Cpu {
             let val1 = self.regs.get(r1);
             let val2: u32 = self.regs.get(r2);
             let sum: u32 = val1 | val2;
+
             self.regs.set(r1, sum);
+            cam.reg_set(r1, sum);
+
         }
         Some(&"AND") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
@@ -336,6 +349,8 @@ impl Cpu {
             let val2: u32 = self.regs.get(r2);
             let sum: u32 = val1 & val2;
             self.regs.set(r1, sum);
+            cam.reg_set(r1, sum);
+
         }
         Some(&"EOR") => { //XOR of 1 and 2 rtn to 1, this has to match the instruction set though
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
@@ -344,7 +359,9 @@ impl Cpu {
             let val1 = self.regs.get(r1);
             let val2: u32 = self.regs.get(r2);
             let sum: u32 = val1 ^ val2;
-            self.regs.set(r1, sum);         
+            self.regs.set(r1, sum);   
+            cam.reg_set(r1, sum);
+      
         }
         Some(&"NOT") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
@@ -352,6 +369,9 @@ impl Cpu {
             let value: String = helper::u32_to_string(self.regs.get(reg));
             let sum = helper::string_to_u32(helper::return_opp_string(value)); //return oppisite in u32
             self.regs.set(reg, sum);
+
+            cam.reg_set(reg, sum);
+
         }
         Some(&"MOVE") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
@@ -359,15 +379,23 @@ impl Cpu {
             let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
             let move_val = self.regs.get(r1);
             self.regs.set(r2, move_val);
+
+            cam.reg_set(r2, move_val);
         }
-        Some(&"MOVEACLR") => { //same case with this one and EOR
+
+        Some(&"MOVEACLR") => { //same case with this one and EOR, just changed a symbol
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
             let r1: u8 = helper::string_to_u8(byte2.grab_half(true)); //grab reg and convert to u8
             let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
             let move_val = self.regs.get(r1);
             self.regs.set(r2, move_val);
             self.regs.set(r1, self.regs.get(0));
+
+            cam.reg_set(r2, move_val);
+            cam.reg_set(r1, self.regs.get(0));
+
         }
+
         Some(&"PUSH") => {
             let operand = self.fetch(bin_file).unwrap();
             let reg_idx = u8::from_str_radix(&operand.grab_half(true), 2).unwrap();
@@ -377,6 +405,8 @@ impl Cpu {
             let new_sp = sp.wrapping_sub(1);
             self.regs.set(13, new_sp as u32);
             ram_unit.write(new_sp, value);
+
+
         }
 
         Some(&"POP") => {
@@ -387,6 +417,8 @@ impl Cpu {
             let value = ram_unit.fetch(sp);
             self.regs.set(13, sp.wrapping_add(1) as u32);
             self.regs.set(reg_idx, value as u32);
+
+
         }
         //Load and jumps
         Some(&"LOADIMM") => {
@@ -396,8 +428,10 @@ impl Cpu {
             let byte3: ByteStr = self.fetch(bin_file).unwrap(); //get third
             load_imm += &byte3.as_string();
             let load_num: u32 = helper::string_to_u32(load_imm);
-            self.regs.set(helper::string_to_u8(top), load_num);
+            let load_reg: u8 = helper::string_to_u8(top);
 
+            self.regs.set(load_reg, load_num);
+            cam.reg_set(load_reg, load_num);
         }
         Some(&"JMP") => {
             let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused for JMP
@@ -466,11 +500,11 @@ impl Cpu {
             ram_unit.write(address,value_on_bus);
         }     
         Some(_) => {
-            println!("Unknown instruction, halting.");
+            println!("<CPU_EXECUTE> Unknown instruction, halting.");
             self.halted = true;
         }
         None => {
-            println!("Unrecognized opcode, halting.");
+            println!("<CPU_EXECUTE> Unrecognized opcode, halting.");
             self.halted = true;
         }
             }
@@ -478,7 +512,8 @@ impl Cpu {
         }
     }
 
-    fn run(&mut self, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit, cam: &mut CpuCam){
+    fn run(&mut self, bin_file: &[ByteStr],ram_unit: &mut RAM::ram::RamUnit, cam: &mut CpuCam, screen: &mut IO::screen::Screen){
+
         while !self.halted {
             let next_instruction = self.fetch(bin_file);
             self.execute(next_instruction, bin_file, ram_unit, cam);
@@ -512,14 +547,14 @@ fn run(char_stream: Vec<char>) {
     cpu.run(&bin_file, &mut ram, &mut cam);
 }
 
-fn main() {
+pub fn get_path_and_run(){
     let args: Vec<String> = env::args().collect();
     let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin");
 
     // Read the file as raw bytes, keep only '0' and '1' chars
     let char_stream: Vec<char> = fs::read_to_string(path)
         .unwrap_or_else(|_| {
-            eprintln!("Warning: could not read '{}', using built-in fallback program.", path);
+            eprintln!("Warning: could not read '{}', using built-in fallback", path);
             // fallback returns a String of '0'/'1'
             fallback_starting_operation().iter().collect()
         })
