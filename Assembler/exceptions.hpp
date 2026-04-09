@@ -29,6 +29,10 @@ namespace terminal{
     void addAddressOutOfRange(int address){
         _errors.push_back(errMes + atLin + std::to_string(atLine) + ' ' + std::to_string(address) + "is out of range");
     }
+    void nonvalidBiosOperation(int address){
+        _errors.push_back(errMes + atLin + std::to_string(atLine) + ' ' + std::to_string(address) + "(decimal) " +
+    "is not a valid BIOS interupt.\n Please see ASM_instructions for valid operations");
+    }
     template <std::integral Type>
     void addIntegralOutOfRange(Type incomingNumber){
         _warnings.push_back(wrnMes + "Number converted " + std::to_string(incomingNumber) + " is not translatable to 8 bytes ");

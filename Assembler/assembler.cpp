@@ -36,6 +36,20 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
     }else if (type == InstrType::ARITH || type == InstrType::DATA_MOV) { //opcode, 1/2 addresses
         binFile.push_back(getNextInstruction(mnemonic)); //byte 1
 
+        if(mnemonic == "INT"){ //ok we have the first byte translated, now we need the bios request
+            try{
+            int incoming = std::stoi(tokens.at(1), nullptr, 16); // convert hex string to integer
+            if(incoming != 10 || incoming != 11 || incoming != 12){ //only values we support right now
+                terminal::nonvalidBiosOperation(incoming);
+            }else{
+                _bytestr hex = int_to_byteStr(incoming);
+                binFile.push_back(hex);
+            }
+        }catch(const std::exception& e){
+            std::cerr << e.what() << std::endl;
+        }
+        }
+
         if (mnemonic == "NOT"){ //special case:
             if (tokens.size() < 2) return;
             binFile.push_back(getRegisterKey(tokens[1])); //byte 2

@@ -25,10 +25,10 @@
 
 
 
-inline const std::string &asmPostfix = "a";  // choose the type of file that ASM will be read from
+inline const std::string &asmPostfix = "em";  // choose the type of file that ASM will be read from
 inline const std::string &binPostfix = ".b"; // choose the type of file that "binary" will write to. include dot for now
 
-inline const std::string &asmDir = "Asm";
+inline const std::string &asmDir = "asm"; //names of directory
 inline const std::string &binDir = "Bin";
 inline const int MAX_Instr_Size = 256;
 inline const int nOfBasics = 4;
@@ -52,6 +52,37 @@ enum class InstrType
     DATA_MOV,
     LOAD_JUMP
 };
+
+//returns a signed byteStr
+inline _bytestr int_to_byteStr(int convert){
+    _bytestr rtn;
+    if(convert == -128){
+        for(int i = 0; i < 8; i++){
+            rtn.at(i) = '1';
+        }
+        return rtn;
+    }
+    if(convert < 0){
+        rtn.at(0) = '1';
+    }else{
+        rtn.at(0) = '0';
+    }
+    convert = std::abs(convert);
+    if(convert / 127 != 0){
+        convert %= 127;
+        std::cout << "Int was converted to bytestr, and bytes were lost, as Int > abs(127) was this intentional?" << std::endl;
+    }
+    int div = 64;
+    for(int i = 0; i < 7; i++){
+        if(convert > div){
+            rtn.at(i) = '1';
+        }else{
+            rtn.at(i) = '0';
+        }
+        div /= 2;
+    }
+    return rtn;
+}
 
 inline _bytestr getRegisterKey(std::string R1, std::string R2){
     std::string byte = "";
@@ -120,6 +151,8 @@ inline std::map<std::string, InstrType> Instruction_Types = {
     {"PUSH", InstrType::DATA_MOV},
     {"POP", InstrType::DATA_MOV},
 
+    {"INT", InstrType::DATA_MOV}, //not really? but im not making a special enum
+
     {"LOADIMM", InstrType::LOAD_JUMP},
     {"JMP", InstrType::LOAD_JUMP},
     {"JMPIF0", InstrType::LOAD_JUMP},
@@ -186,6 +219,8 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("1000:0101");
     arr.at(24) = "JMPIFAULT";
     addBinInstruction("1000:0110");
+
+
     /**
      * @attention LOAD and STORE are now three byte instructions. They were in data movement,
      * but they are not 2 byte instructions, so now they are at the end, here
@@ -194,6 +229,11 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("1000:0111");
     arr.at(15) = "STORE";
     addBinInstruction("1000:1000");
+
+    //interupt (2 bytes)
+    arr.at(25) = "INT";
+    addBinInstruction("0100:1100");
+
 }
 
 
