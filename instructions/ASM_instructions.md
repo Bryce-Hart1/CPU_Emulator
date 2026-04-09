@@ -130,6 +130,33 @@ moves reg1 TO reg2. does not clear reg1.
 
 ```
 
+## Interupts (2 bytes)
+```
+0100 1100 INT (interupt)
+-----------------------------------------------
+Cuts to Interupt table In the bios. Keep in mind the CPU will only handle 
+the interupt byte.
+When CPU sees ->INT<- itll pass to the bios.
+Next Byte:
+possible second Byte:
+INT 0A //writes to screen
+INT 0B //takes from keyboard
+INT 0C //takes from Disk
+
+INT 0A
+looks at R1, R2 for what to do next.
+R1 : Char to write (takes mod of 255)
+R2 : 
+(top 3 blank bytes in reg ) _ _ _ _ _ _ _ _ 
+                            ^       ^
+                        Foreground Background
+16 options for each
+This number will also be modded by 255 to prevent errors
+
+
+```
+
+
 ## Load and Jumps (3 bytes)
 Includes 7 instructions: LOADIMM, JMP, JMPIF0, JMPIF!0, CALL, JMPIFCRRY, JMPIFAULT
 ```
@@ -168,5 +195,7 @@ Checks Zero flag in flags register
 1000 1000 STORE (reg) (padding) (8 bit addr (ram))
 -----------------------------------------------
 Stores requested value from register into ram at a 8 bit address
+
+
 
 ```
