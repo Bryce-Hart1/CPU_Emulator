@@ -1,6 +1,7 @@
 use std::fs;
 use std::env;
 use std::collections::HashMap;
+use crate::IO::screen;
 use crate::helper;
 use crate::IO;
 use crate::RAM;
@@ -200,6 +201,9 @@ impl InstructionTable {
         map.insert(ByteStr::new("01001001").my_hashed_value(), "MOVEACLR");
         map.insert(ByteStr::new("01001010").my_hashed_value(), "PUSH");
         map.insert(ByteStr::new("01001011").my_hashed_value(), "POP");
+
+        //interupts
+        map.insert(ByteStr::new("01001100").my_hashed_value(), "INT");
 
         // Load and Jumps (3 bytes)
         map.insert(ByteStr::new("10000000").my_hashed_value(), "LOADIMM");
@@ -544,7 +548,8 @@ fn run(char_stream: Vec<char>) {
     let mut cpu = Cpu::new();
     let mut ram = RAM::ram::RamUnit::new();
     let mut cam: CpuCam = CpuCam::new();
-    cpu.run(&bin_file, &mut ram, &mut cam);
+    let mut screen: screen::Screen = screen::Screen::new();
+    cpu.run(&bin_file, &mut ram, &mut cam, &mut screen);
 }
 
 pub fn get_path_and_run(){
