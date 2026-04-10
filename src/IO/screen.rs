@@ -21,8 +21,10 @@ impl RGB{
 
 pub struct Screen{
     position : [[RGB; 255]; 255],
-    cursorX : u8,
-    cursorY: u8
+    cursorX : u8, //writes color at this position (one pixel)
+    cursorY: u8,
+    writeToX: u8, //writes next character or object at this position
+    writeToY: u8,
 }
 
 /**
@@ -35,7 +37,7 @@ impl Screen{
     const height: usize = 255; // 0 is also an index
     pub fn new() -> Self{
         let color_black = RGB::new(0, 0, 0);
-        Self { position: [[color_black; Self::width]; Self::height], cursorX : 0, cursorY: 0 } 
+        Self { position: [[color_black; Self::width]; Self::height], cursorX : 0, cursorY: 0, writeToX: 0, writeToY: 0 } 
     }
     ///write a single value at the cursors current position. new write will update on next tick
     pub fn write(&mut self, passedColor: RGB, camera: &mut render::CpuCam){
@@ -58,5 +60,17 @@ impl Screen{
 
     pub fn at(&self, x: u8, y: u8) -> RGB {
         self.position[x as usize][y as usize]
+    }
+
+    pub fn get_write_char_x(&self) -> u8{
+        return self.writeToX;
+    }
+
+    pub fn get_write_char_y(&self) -> u8{
+        return self.writeToY;
+    }
+    pub fn where_next_write(&mut self, x: u8, y: u8){
+        self.writeToX = x;
+        self.writeToY = y;
     }
 }
