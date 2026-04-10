@@ -1,6 +1,7 @@
+use crate::IO::screen::*;
+
+
 //from myLib - ruststd
-
-
 //hashes a String type as a unsigned 4 byte int
 pub fn str(s: &String) -> u32 {
     let mut hash = 2166136261u32; // FNV offset basis
@@ -74,6 +75,17 @@ pub fn u8_to_string(passed: u8) -> String{
         div /= 2;
     }
     return rtn;
+}
+
+pub fn str_hex_to_u32(passed: &str) -> u32 {
+    let mut result: u32 = 0;
+
+    for c in passed.chars() {
+        let digit = c.to_digit(16).expect("Invalid hex character");
+        result = result * 16 + digit;
+    }
+
+    result
 }
 
 pub fn return_opp_string(passed: String) -> String{
