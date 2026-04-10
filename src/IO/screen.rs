@@ -1,12 +1,12 @@
 use crate::render::{self, *};
-use raylib::{color::Color, ffi::Color};
+use raylib::color::Color;
 
 
 #[derive(Copy, Clone)]
 pub struct RGB{
-    red : u8,
-    green : u8,
-    blue : u8
+    pub red : u8,
+    pub green : u8,
+    pub blue : u8
 }
 
 impl RGB{
@@ -43,8 +43,20 @@ impl Screen{
         camera.screen_set(self.cursorX, self.cursorY, passedColor);
     }
     //used to return a value at that position for printing to screen
-    pub fn at(self, x: u8, y: u8) -> RGB{
-        return self.position[x as usize][y as usize];
+
+    pub fn update_cursor_pos(&mut self, x: u8, y: u8){
+        self.cursorX = x;
+        self.cursorY = y;
     }
-    
+    pub fn get_cursor_x(&self) -> u8 {
+        self.cursorX
+    }
+
+    pub fn get_cursor_y(&self) -> u8 {
+        self.cursorY
+    }
+
+    pub fn at(&self, x: u8, y: u8) -> RGB {
+        self.position[x as usize][y as usize]
+    }
 }
