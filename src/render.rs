@@ -2,19 +2,10 @@ use raylib::ffi::DrawCircle;
 use raylib::prelude::*;
 use raylib::color::Color;
 use crate::colors::*;
+use crate::IO::screen::*;
 
 
 
-
-//Just the same as RGB in Colors.rs and for screen
-#[derive(Copy, Clone)]
-pub struct RGB(pub u8, pub u8, pub u8);
-
-impl RGB {
-    pub fn to_raylib_color(self) -> Color {
-        Color::new(self.0, self.1, self.2, 255)
-    }
-}
 /**
  * This takes a picture of the current layout of things inside the computer to display
  * Also chooses the Current screen that is being rendered 
@@ -78,7 +69,7 @@ impl CpuCam{
             last_ram_write:   None,
             last_ram_read:    None,
 
-            screen:           [[RGB(0, 0, 0); 255]; 255],
+            screen:           [[RGB::new(0, 0, 0); 255]; 255],
 
             keys_held:        [false; 45],
             keys_pressed:     [false; 45],

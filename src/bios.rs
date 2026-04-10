@@ -2,6 +2,7 @@ use crate::IO;
 use crate::IO::screen::RGB;
 use crate::helper;
 use crate::CPU::cpuDisplay;
+use crate::RAM::ram;
 
 fn biosBasicColor(getColor: u8) -> RGB {
     match getColor {
@@ -30,11 +31,12 @@ fn biosBasicColor(getColor: u8) -> RGB {
  * reg1, 2 and 3 maybe used
  * for screen: one and 2 will be used
  **/
-pub fn call_to_bios(interuptByte: u8, reg1: u32, reg2: u32, reg3 : u32, screen: &mut IO::screen::Screen, camera:&mut crate::render::CpuCam ){
+pub fn call_to_bios(interruptByte: u8, reg1: u32, reg2: u32, reg3 : u32, camera:&mut crate::render::CpuCam, 
+    screen: &mut IO::screen::Screen, disk: &mut IO::disk::disk, ram: &mut ram::RamUnit){
 
-    match interuptByte{
+    match interruptByte{
         0_u8..=9_u8 =>{
-            println!("<ERROR> in Calling bios: Interupt was out of range: {}", interuptByte);
+            println!("<ERROR> in Calling bios: interrupt was out of range: {}", interruptByte);
         }
         10u8 =>{ //allow write to screen access directly
             //moves cursor to each position and writes 
@@ -48,6 +50,7 @@ pub fn call_to_bios(interuptByte: u8, reg1: u32, reg2: u32, reg3 : u32, screen: 
             let foreground_color: RGB = biosBasicColor(foreground_hex);
             //now we need to write this from bios ASCII table onto screen
             let writeVec = cpuDisplay::what_is_char(charReq); // fallback is space, but unknown is still an option
+            screen.where_next_write(screen.get_write_char_x() + writeVec[0].len() as u8, screen.get_cursor_y()); //where will next character/object be placed?
             for i in 0..writeVec.len() {
                 for j in 0..writeVec[i].len() {
                     //write foreground if true, background if false
@@ -57,9 +60,9 @@ pub fn call_to_bios(interuptByte: u8, reg1: u32, reg2: u32, reg3 : u32, screen: 
                         screen.write(foreground_color, camera);
                     }
 
-                    screen.update_cursor_pos(screen.get_cursor_x(), screen.get_cursor_y()+1);
+                    screen.update_cursor_pos(screen.get_cursor_x(), screen.get_cursor_y()+1); // move y of next pixel write +1
                 }
-                screen.update_cursor_pos(screen.get_cursor_x()+1, screen.get_cursor_y());
+                screen.update_cursor_pos(screen.get_cursor_x()+1, screen.get_cursor_y()); //move the x ofå the next pixel write +1
             }        
         }
         11u8 =>{ 
@@ -68,9 +71,30 @@ pub fn call_to_bios(interuptByte: u8, reg1: u32, reg2: u32, reg3 : u32, screen: 
         12u8 => {
 
         }
-        13_u8..=255_u8 => {
+        13_u8 => { //BIOs handles disk, this is read
+            let mut position_of_reader: u16 = reg2 as u16; //where to fetch in ram
+            let mut read: u32 = 0;
+            let read_amount: u32 = reg1;
+            let mut ram_write_at: u8 = reg3 as u8;
+
+            for four_bytes in 0..read_amount{
+                read = disk.read(position_of_reader);
+                ram.write(ram_write_at, read);
+            }
+        }14_u8 => { //write to disk from ram
+            let mut position_of_reader: u8 = reg2 as u8; //where to fetch in ram
+            let mut read: u32 = 0;
+            let read_amount: u32 = reg1;
+            let mut position_of_writer: u16 = reg3 as u16;
+            
+            for four_bytes in 0..read_amount{
+                read = ram.fetch(position_of_reader);
+                disk.write(position_of_writer, read);
+            }    
+
+        }15_u8..=255_u8 => {
             //do nothing
-            println!("<ERROR> in Calling bios: Interupt was out of range: {}", interuptByte);
+            println!("<ERROR> in Calling bios: interrupt was out of range: {}", interruptByte);
         }
 
     }
