@@ -1,2 +1,2 @@
 pub(crate) mod cpu;
-mod cpuDisplay;
+pub(crate) mod cpuDisplay;

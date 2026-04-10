@@ -149,10 +149,6 @@ impl Flags {
     }
 }
 
-// ─── Decoded Instruction ─────────────────────────────────────────────────────
-// Represents one decoded instruction along with the raw bytes that made it.
-// This is what you'll hand off to egui for display.
-
 struct DecodedInstruction {
     raw_bytes: Vec<u8>,   // The 1, 2, or 3 bytes that form this instruction
     mnemonic:  String,    // Human-readable name e.g. "LOADIMM"
