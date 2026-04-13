@@ -9,7 +9,7 @@ remember without a table.
 2. All instructions must be ascii characters
 3. Must be as clear as possible
 
-# optcode rule
+# opcode rule
 ```
 top 2 bytes
 00 1 byte instruction
@@ -132,18 +132,22 @@ moves reg1 TO reg2. does not clear reg1.
 
 ## Interupts (2 bytes)
 ```
-0100 1100 INT (interupt)
+0100 1100 INT (interrupt)
 -----------------------------------------------
-Cuts to Interupt table In the bios. Keep in mind the CPU will only handle 
-the interupt byte.
-When CPU sees ->INT<- itll pass to the bios.
+Cuts to Interrupt table In the bios. Keep in mind the CPU will only handle 
+the interrupt byte. Keep in mind these need called AFTER you have REGS loaded, and 
+the registers that you are loading are specific to the Instruction, but should be in order, 
+example r1, r2 ... 
+When CPU sees ->INT<- it'll pass to the bios.
 Next Byte:
 possible second Byte:
 INT 0A //writes to screen
 INT 0B //takes from keyboard
-INT 0C //takes from Disk
-
-INT 0A
+INT 0C //move user cursor 
+INT 0D //takes from Disk
+```
+#### INT 0A
+```
 looks at R1, R2 for what to do next.
 R1 : Char to write (takes mod of 255)
 R2 : 
@@ -153,6 +157,76 @@ R2 :
 16 options for each
 This number will also be modded by 255 to prevent errors
 
+```
+#### INT 0B 
+```
+Colors whole screen based on whats found in R1
+
+R1 : (top 3 blank) _ _ _ _ _ _ _ _
+                           ^
+                           Background 
+
+This overrides anything previously drawn, does not reset cursor
+
+16 options for each.
+```
+### colors for bios
+#### black 
+00H
+#### blue
+01H
+#### green
+02H
+#### bright blue (cyan-ish)
+03H
+#### red
+04H
+#### purple
+05H
+#### orange (brown-ish alt)
+06H
+#### white (light gray)
+07H
+#### grey
+08H
+#### bright blue
+09H
+#### bright green
+0AH
+#### bright cyan
+0BH
+#### bright red
+0CH
+#### bright purple
+0DH
+#### yellow
+0EH
+#### bright white
+0FH
+
+```
+```
+#### INT 0C
+```
+
+INT 0D 
+Allows for a Interrupt to read from disk.
+Takes a few arguments: 
+Looks at R1, R2, and R3 for what to do next.
+R1 How many bytes to read (no actual platter, so pick as many bytes as you want!)
+R2 location to read from this is 0 based.
+*If you want cell 18 for example:
+LOADIMM R2 11 (in hex) 
+R3 where to write in RAM
+Same as Disk, also 0 based, but keep in mind there is only 256 locations, 
+compared to the disks 2^16 (65536) locations.
+*For both, if you write out of bounds, this will cause undefined behavior
+
+INT 0E
+write to disk. Same rules apply from reading.
+R1 How many bytes to transfer from RAM to disk
+R2 location of RAM to read from 
+R3 where to write on disk
 
 ```
 
