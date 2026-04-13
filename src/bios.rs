@@ -62,11 +62,24 @@ pub fn call_to_bios(interruptByte: u8, reg1: u32, reg2: u32, reg3 : u32, camera:
 
                     screen.update_cursor_pos(screen.get_cursor_x(), screen.get_cursor_y()+1); // move y of next pixel write +1
                 }
-                screen.update_cursor_pos(screen.get_cursor_x()+1, screen.get_cursor_y()); //move the x ofå the next pixel write +1
+                screen.update_cursor_pos(screen.get_cursor_x()+1, screen.get_cursor_y()); //move the x of the next pixel write +1
             }        
         }
-        11u8 =>{ 
-
+        11u8 =>{ //0B
+            let colorReq: RGB = biosBasicColor(reg1 as u8);
+            let restoreCursorX: u8 = screen.get_cursor_x();
+            let restoreCursorY = screen.get_cursor_y();
+            screen.update_cursor_pos(0, 0);
+            const SCREEN_SZE: usize = u8::max_value() as usize;
+            for row in 0..SCREEN_SZE{
+                for tile in 0..SCREEN_SZE{
+                    screen.write(colorReq, camera);
+                    screen.update_cursor_pos(screen.get_cursor_x(), screen.get_cursor_y()+1); // move y
+                }
+                screen.update_cursor_pos(screen.get_cursor_x()+1, screen.get_cursor_y()); //move the x
+            }
+            //then reset cursor
+            screen.update_cursor_pos(restoreCursorX, restoreCursorY);
         }
         12u8 => {
 
