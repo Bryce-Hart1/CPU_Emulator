@@ -42,26 +42,28 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
     }else if (type == InstrType::ARITH || type == InstrType::DATA_MOV) { //opcode, 1/2 addresses
         binFile.push_back(getNextInstruction(mnemonic)); //byte 1
 
-        if(mnemonic == "INT"){ //ok we have the first byte translated, now we need the bios request
+        if(mnemonic == "INT"){
             const int SCREEN = 10;
             const int FILLSCREEN = 11;
             const int DISK_READ = 13;
             const int DISK_WRITE = 14;
 
-        int incoming = hex_to_int(tokens.at(1));
-        if(incoming == -1){
-            terminal::hexValueNonValid(tokens.at(1));
-        }
-        try{
-            if(incoming != SCREEN && incoming != DISK_READ && incoming != DISK_WRITE && incoming != FILLSCREEN){ 
-                terminal::nonvalidBiosOperation(incoming); //if its not a valid BIOs instruction
-            }else{
-                _bytestr int_of_hex = int_to_byteStr(incoming);
-                binFile.push_back(int_of_hex);
+            int incoming = hex_to_int(tokens.at(1));
+            if(incoming == -1){
+                terminal::hexValueNonValid(tokens.at(1));
+                incoming = 0;
             }
-        }catch(const std::exception& e){
-            std::cerr << e.what() << std::endl;
-        }
+            try{
+                if(incoming != SCREEN && incoming != DISK_READ && incoming != DISK_WRITE && incoming != FILLSCREEN){ 
+                    terminal::nonvalidBiosOperation(incoming);
+                } else {
+                    _bytestr int_of_hex = int_to_byteStr(incoming);
+                    binFile.push_back(int_of_hex);
+                }
+            } catch(const std::exception& e){
+                std::cerr << e.what() << std::endl;
+            }
+            return;  //INT is fully handled, don't fall through to register.
         }
 
         if (mnemonic == "NOT"){ //special case:
@@ -97,14 +99,16 @@ void assemble(const std::string& filePath){
         string line;
         while (getline(inputFile, line)) {
             assembleHelper(line, binFile);
+            terminal::incrementLineWorkingOn();
         }
         for(std::size_t i = 0; i < (binFile.size()); i++){
             _bytestr translate = binFile.at(i);
             for(int j = 0; j < 8; j++){
                 outputFile << translate.at(j);
-            }
-            if(i +1 % 4 == 0 && i != 0){
-                outputFile << '\n'; //added a newline every 4 bytes
+            }// one byte
+            //my thinking ~150 characters 150 / 8 = 18ish bytes
+            if(i % 18 == 0 && i != 0){
+                outputFile << '\n'; //newline to div up
             }
         }
         inputFile.close();
@@ -154,10 +158,9 @@ int main(){
     for(const auto& file : asmFiles){
         std::cout << "Assembling: " << file << std::endl;
         assemble(file);
-    }
     using namespace terminal;
     if(_errors.size() != 0){
-        //do something to stop the making of the file
+        //do something to stop the making of the file, eventually
     }
     for(auto& warn : _warnings){
         std::cout << warn << std::endl;
@@ -165,7 +168,22 @@ int main(){
     for(auto& err : _errors){
         std::cout << err << std::endl;
     }
-    std::cout << ' ' << _warnings.size() << " warnings and " << _errors.size() << " Errors generated" << std::endl;
+    if(_warnings.size() != 0){
+        std::cout << _warnings.size() << " warnings";
+    }
+    if(_warnings.size() != 0 && _errors.size() != 0){
+        std::cout << " and";
+    }
+    if(_errors.size() != 0){
+        std::cout << _errors.size() << " errors";
+    }
+    if(_warnings.size() != 0 || _errors.size() != 0){
+    std::cout << " generated" << std::endl;
+    }
+    _warnings.clear();
+    _errors.clear(); // clear bc we already have printed
+    }
+
     
 
     return 0;

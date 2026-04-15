@@ -292,7 +292,7 @@ inline _bytestr getTranslatedAddress(std::string hex){
     try {
         int incoming = hex_to_int(hex);
         if(incoming == -1){
-            terminal::hexValueNonValid(hex);
+            return terminal::emptyByteStr;
         }
         if(incoming > 255 || incoming < 0){
             terminal::addAddressOutOfRange(incoming);
@@ -310,7 +310,7 @@ inline _bytestr getTranslatedAddress(std::string hex){
             thisBit /= 2;
         }
         return r;
-    } catch(const std::exception& e){
+    }catch(const std::exception& e){
         terminal::addSyntaxError(hex);
         return terminal::emptyByteStr;
     }

@@ -24,7 +24,7 @@ namespace terminal{
         atLine++;
     }
     void addSyntaxError(const std::string& parsed){
-        _errors.push_back(errMes + atLin + std::to_string(atLine) +  ' ' + parsed + "Is not valid syntax");
+        _errors.push_back(errMes + atLin + std::to_string(atLine) +  ' ' + parsed + " is not valid syntax");
     }
     void addAddressOutOfRange(int address){
         _errors.push_back(errMes + atLin + std::to_string(atLine) + ' ' + std::to_string(address) + "is out of range");
