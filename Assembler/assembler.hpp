@@ -33,7 +33,7 @@ inline const std::string &binDir = "Bin";
 inline const int MAX_Instr_Size = 256;
 inline const int nOfBasics = 4;
 inline const int nOfArith = 8;
-inline const int nOfDataMvm = 6;
+inline const int nOfDataMvm = 7;
 inline const int nOfLoadAndJump = 7;
 inline const int TOTAL_NUM_OF_INSTRUCTIONS = (nOfBasics + nOfArith + nOfDataMvm + nOfLoadAndJump);
 
@@ -56,26 +56,13 @@ enum class InstrType
 //returns a signed byteStr
 inline _bytestr int_to_byteStr(int convert){
     _bytestr rtn;
-    if(convert == -128){
-        for(int i = 0; i < 8; i++){
-            rtn.at(i) = '1';
-        }
-        return rtn;
-    }
-    if(convert < 0){
-        rtn.at(0) = '1';
-    }else{
-        rtn.at(0) = '0';
-    }
-    convert = std::abs(convert);
-    if(convert / 127 != 0){
-        convert %= 127;
-        std::cout << "Int was converted to bytestr, and bytes were lost, as Int > abs(127) was this intentional?" << std::endl;
-    }
+    rtn.at(0) = (convert < 0) ? '1' : '0';
+    convert = std::abs(convert) % 128;
     int div = 64;
-    for(int i = 0; i < 7; i++){
-        if(convert > div){
+    for(int i = 1; i < 8; i++){    
+        if(convert >= div){            
             rtn.at(i) = '1';
+            convert -= div; 
         }else{
             rtn.at(i) = '0';
         }
@@ -83,7 +70,9 @@ inline _bytestr int_to_byteStr(int convert){
     }
     return rtn;
 }
-
+/**
+ * gets reg as a full byte, has its respective overload that converts one reg
+ */
 inline _bytestr getRegisterKey(std::string R1, std::string R2){
     std::string byte = "";
     _bytestr r;
@@ -104,6 +93,7 @@ inline _bytestr getRegisterKey(std::string R1, std::string R2){
 
     return r;
 }
+
 inline _bytestr getRegisterKey(std::string R1){
     return getRegisterKey(R1, "0000");
 }
@@ -126,6 +116,32 @@ inline void addBinInstruction(const std::string str)
     BinaryMatch_Set.at(binMatchItr++) = temp;
 }
 
+inline int hex_to_int(const std::string& passed) {
+    std::string hexVal;
+
+    if (!passed.empty() && (passed.back() == 'H' || passed.back() == 'h')) {
+        hexVal = passed.substr(0, passed.size() - 1);
+    } else if (!passed.empty() && (passed.front() == 'h' || passed.front() == 'H')) {
+        hexVal = passed.substr(1);
+    } else {
+        hexVal = passed;
+    }
+
+    int finalVal = 0;
+
+    for (char c : hexVal) {
+        c = std::toupper(c);
+
+        int digit;
+        if (c >= '0' && c <= '9') digit = c - '0';
+        else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+        else return -1;
+
+        finalVal = finalVal * 16 + digit;
+    }
+
+    return finalVal;
+}
 /**
  * @attention these inline structures and function are for easy access to mainipulating instructions for
  * easy addition of your own / more instructions.
@@ -199,6 +215,15 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("0100:1000");
     arr.at(13) = "MOVE&CLR";
     addBinInstruction("0100:1001");
+    /**
+     * @attention LOAD and STORE are now three byte instructions. They were in data movement,
+     * but they are not 2 byte instructions, so now they are at the end, here
+     */
+    arr.at(14) = "LOAD";
+    addBinInstruction("1000:0111");
+    arr.at(15) = "STORE";
+    addBinInstruction("1000:1000");
+
     arr.at(16) = "PUSH";
     addBinInstruction("0100:1010");
     arr.at(17) = "POP";
@@ -219,17 +244,6 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("1000:0101");
     arr.at(24) = "JMPIFAULT";
     addBinInstruction("1000:0110");
-
-
-    /**
-     * @attention LOAD and STORE are now three byte instructions. They were in data movement,
-     * but they are not 2 byte instructions, so now they are at the end, here
-     */
-    arr.at(14) = "LOAD";
-    addBinInstruction("1000:0111");
-    arr.at(15) = "STORE";
-    addBinInstruction("1000:1000");
-
     //interupt (2 bytes)
     arr.at(25) = "INT";
     addBinInstruction("0100:1100");
@@ -275,26 +289,31 @@ inline _bytestr getNextInstruction(const std::string &instruction){
  * for RAM address.
  */
 inline _bytestr getTranslatedAddress(std::string hex){
-    if(hex.at(0) != 'h' && hex.at(0) != 'H'){
+    try {
+        int incoming = hex_to_int(hex);
+        if(incoming == -1){
+            terminal::hexValueNonValid(hex);
+        }
+        if(incoming > 255 || incoming < 0){
+            terminal::addAddressOutOfRange(incoming);
+            return terminal::emptyByteStr;
+        }
+        int thisBit = 128;
+        _bytestr r;
+        for(int i = 0; i < 8; i++){
+            if(incoming >= thisBit){
+                incoming -= thisBit;
+                r.at(i) = '1';
+            } else {
+                r.at(i) = '0';
+            }
+            thisBit /= 2;
+        }
+        return r;
+    } catch(const std::exception& e){
         terminal::addSyntaxError(hex);
-    }
-    int incoming = std::stoi(hex, nullptr, 16); // convert hex string to integer
-    if (incoming > 256 || incoming < 0){ // largest 8 bit values
-        terminal::addAddressOutOfRange(incoming);
         return terminal::emptyByteStr;
     }
-    int thisBit= 128;
-    _bytestr r; //return
-    for(int i = 0; i < 8; i++){
-        if(incoming >= thisBit){
-            incoming %= thisBit;
-            r.at(i) = '1';
-        }else{
-            r.at(i) = '0';
-        }
-        thisBit /= 2;
-    }
-    return r;
 }
     
 //sets up passed in map with all instructions and their matching binary
@@ -305,6 +324,8 @@ inline void defineMap(std::map<std::string, _bytestr> &map)
         map.insert({Instruction_Set.at(i), BinaryMatch_Set.at(i)});
     }
 }
+
+
 
 inline std::vector<std::string> tokenize(const std::string &line);
 

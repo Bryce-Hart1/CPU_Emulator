@@ -19,7 +19,7 @@ namespace terminal{
     const std::string& errMes = "[ERROR]: "; //comes with a space after
     const std::string& atLin = "At line: "; //comes with space after
     const _bytestr emptyByteStr = {'0', '0', '0', '0', '0', '0', '0', '0'};
-    //incremements the line that assembler is at
+    //incrmements the line that assembler is at
     void incrementLineWorkingOn(){
         atLine++;
     }
@@ -31,7 +31,10 @@ namespace terminal{
     }
     void nonvalidBiosOperation(int address){
         _errors.push_back(errMes + atLin + std::to_string(atLine) + ' ' + std::to_string(address) + "(decimal) " +
-    "is not a valid BIOS interupt.\n Please see ASM_instructions for valid operations");
+    "is not a valid BIOS interrupt.\n Please see ASM_instructions for valid operations");
+    }
+    void hexValueNonValid(const std::string& hex){
+        _errors.push_back(errMes + atLin + std::to_string(atLine) + ' ' + "Hex value is non valid input:" + hex + " .");
     }
     template <std::integral Type>
     void addIntegralOutOfRange(Type incomingNumber){

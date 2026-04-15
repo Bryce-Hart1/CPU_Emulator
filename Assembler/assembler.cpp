@@ -1,7 +1,7 @@
 #include "assembler.hpp"
 
 
-
+// tokenize a single line
 std::vector<std::string> tokenize(const std::string& line) {
     std::vector<std::string> tokens;
     std::istringstream stream(line);
@@ -17,10 +17,11 @@ std::vector<std::string> tokenize(const std::string& line) {
  * @details little abstraction to take a single line of asm and convert it to binary
  */
 void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
+    //if line is blank or a comment
     if (line.empty() || line[0] == '#'){
         return;
     }
-
+    //if there is no tokens on this line
     auto tokens = tokenize(line);
     if (tokens.empty()) {
         return;
@@ -29,7 +30,12 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
     std::string mnemonic = tokens[0]; // instruction (Ex: ADD)
     auto opcode = Instruction_Key.at(mnemonic);
     InstrType type = Instruction_Types.at(mnemonic);
-
+        
+    std::string stripped = line.substr(0, line.find('#'));
+    
+    if (stripped.empty()) return;  // was a full-line comment or blank
+    
+    if (tokens.empty()) return;
     if(type == InstrType::BASIC) { // 1 byte — just the opcode
         binFile.push_back(getNextInstruction(mnemonic));
 
@@ -37,13 +43,21 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
         binFile.push_back(getNextInstruction(mnemonic)); //byte 1
 
         if(mnemonic == "INT"){ //ok we have the first byte translated, now we need the bios request
-            try{
-            int incoming = std::stoi(tokens.at(1), nullptr, 16); // convert hex string to integer
-            if(incoming != 10 || incoming != 11 || incoming != 12){ //only values we support right now
-                terminal::nonvalidBiosOperation(incoming);
+            const int SCREEN = 10;
+            const int FILLSCREEN = 11;
+            const int DISK_READ = 13;
+            const int DISK_WRITE = 14;
+
+        int incoming = hex_to_int(tokens.at(1));
+        if(incoming == -1){
+            terminal::hexValueNonValid(tokens.at(1));
+        }
+        try{
+            if(incoming != SCREEN && incoming != DISK_READ && incoming != DISK_WRITE && incoming != FILLSCREEN){ 
+                terminal::nonvalidBiosOperation(incoming); //if its not a valid BIOs instruction
             }else{
-                _bytestr hex = int_to_byteStr(incoming);
-                binFile.push_back(hex);
+                _bytestr int_of_hex = int_to_byteStr(incoming);
+                binFile.push_back(int_of_hex);
             }
         }catch(const std::exception& e){
             std::cerr << e.what() << std::endl;
@@ -88,6 +102,9 @@ void assemble(const std::string& filePath){
             _bytestr translate = binFile.at(i);
             for(int j = 0; j < 8; j++){
                 outputFile << translate.at(j);
+            }
+            if(i +1 % 4 == 0 && i != 0){
+                outputFile << '\n'; //added a newline every 4 bytes
             }
         }
         inputFile.close();
@@ -138,6 +155,18 @@ int main(){
         std::cout << "Assembling: " << file << std::endl;
         assemble(file);
     }
+    using namespace terminal;
+    if(_errors.size() != 0){
+        //do something to stop the making of the file
+    }
+    for(auto& warn : _warnings){
+        std::cout << warn << std::endl;
+    } 
+    for(auto& err : _errors){
+        std::cout << err << std::endl;
+    }
+    std::cout << ' ' << _warnings.size() << " warnings and " << _errors.size() << " Errors generated" << std::endl;
+    
 
     return 0;
 }
