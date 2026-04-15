@@ -10,6 +10,7 @@ use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::prelude::*;
 use std::fs;
+use crate::helper;
 
 pub struct disk{
     path : String,
@@ -30,6 +31,33 @@ impl disk{
             }; 
             disk.reformat();
             return disk;
+        }
+
+        pub fn load_bios(&mut self) {
+            let path_to_bios = "assembler/bin/bios.b";
+            
+            let content = fs::read_to_string(path_to_bios)
+                .expect("Failed to read bios.b.\nPlease re-add bios file");
+            
+            // Remove all whitespace and non-binary characters
+            let binary_string: String = content
+                .chars()
+                .filter(|c| *c == '0' || *c == '1')
+                .collect();
+            
+            // Process in chunks of 32 bits (4 bytes)
+            for (index, chunk) in binary_string.as_bytes().chunks(32).enumerate() {
+                let binary_str = std::str::from_utf8(chunk).unwrap_or("00000000000000000000000000000000");
+                
+                // Pad with zeros if last chunk is incomplete
+                let mut padded = binary_str.to_string();
+                while padded.len() < 32 {
+                    padded.push('0');
+                }
+                
+                let instruction = helper::string_to_u32(padded);
+                self.write(index as u16, instruction);
+            }
         }
 
         pub fn reformat(&self) {
