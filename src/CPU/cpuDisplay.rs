@@ -181,6 +181,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![true, false, true],
     vec![false, false, false]
     ];
+    map.insert('*', _multi);
 
     //ascii 43 + 
    let _plus = 
@@ -191,6 +192,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, true, false],
     vec![false, false, false]
     ];    
+    map.insert('+', _plus);
 
     //ascii 44 , 
     let _comma = 
@@ -201,6 +203,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, true],
     vec![true, false]
     ];   
+    map.insert(',', _comma);
 
 
     //ascii 45 - 
@@ -212,6 +215,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, false],
     vec![false, false]
     ];   
+    map.insert('-', _minus);
 
 
     //ascii 46 .
@@ -223,6 +227,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false],
     vec![true]
     ];   
+    map.insert('.', _period);
 
 
     //ascii 47 /
@@ -634,6 +639,55 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![true, false, false],
     vec![true, true, true]
     ];         
+
+    //ascii 91
+    let _left_bracket = 
+    vec![
+    vec![true, true],
+    vec![true, false],
+    vec![true, false],
+    vec![true, false],
+    vec![true, true],
+    ]; 
+    //ascii 92
+    let _back_slash = 
+    vec![
+    vec![true, false],
+    vec![true, false],
+    vec![true, false],
+    vec![false, true],
+    vec![false, true],
+    ];     
+    //ascii 93
+    let _right_bracket = 
+    vec![
+    vec![true, true],
+    vec![false, true],
+    vec![false, true],
+    vec![false, true],
+    vec![true, true],
+    ];    
+    //ascii 94
+    let _hat = 
+    vec![
+    vec![false, false, false],
+    vec![false, true, false],
+    vec![true, false, true],
+    vec![false, false, false],
+    vec![false, false, false]
+    ];  
+    //ascii 95
+    let _underscore =
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![true, true, true]
+    ];     
+    
+
+
 
 
     return map.get(&input)
