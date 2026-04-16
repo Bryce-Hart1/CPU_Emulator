@@ -1,5 +1,5 @@
 #include "assembler.hpp"
-
+#include "labels.hpp"
 
 // tokenize a single line
 std::vector<std::string> tokenize(const std::string& line) {
@@ -12,6 +12,11 @@ std::vector<std::string> tokenize(const std::string& line) {
     return tokens;
 }
 
+void do_first_pass(const std::ifstream& file){
+    using namespace lbl;
+    Labels labels_so_far = Labels();
+    //TODO: finish this
+}
 
 /**
  * @details little abstraction to take a single line of asm and convert it to binary

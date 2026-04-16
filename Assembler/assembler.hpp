@@ -84,7 +84,7 @@ inline _bytestr getRegisterKey(std::string R1, std::string R2){
         byte += Register_Key.at(R1);
         byte += Register_Key.at(R2);
     }catch(const std::exception& e){
-        terminal::addSyntaxError(R1);
+        terminal::SyntaxError(R1);
     }
 
     for(int i = 0; i < 8 && i < byte.size(); i++){
@@ -295,7 +295,7 @@ inline _bytestr getTranslatedAddress(std::string hex){
             return terminal::emptyByteStr;
         }
         if(incoming > 255 || incoming < 0){
-            terminal::addAddressOutOfRange(incoming);
+            terminal::AddressOutOfRange(incoming);
             return terminal::emptyByteStr;
         }
         int thisBit = 128;
@@ -311,7 +311,7 @@ inline _bytestr getTranslatedAddress(std::string hex){
         }
         return r;
     }catch(const std::exception& e){
-        terminal::addSyntaxError(hex);
+        terminal::SyntaxError(hex);
         return terminal::emptyByteStr;
     }
 }
