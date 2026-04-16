@@ -1,7 +1,6 @@
 use crate::render::{self, *};
 use raylib::color::Color;
 
-
 #[derive(Copy, Clone)]
 pub struct RGB{
     pub red : u8,
