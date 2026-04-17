@@ -22,7 +22,7 @@
 #include <cmath>
 
 #include "exceptions.hpp" 
-
+#include "labels.hpp"
 
 
 inline const std::string &asmPostfix = "em";  // choose the type of file that ASM will be read from
@@ -333,3 +333,4 @@ inline void assembleHelper(const std::string &line, std::vector<i8> &binFile);
 inline void assemble(const std::string &filePath);
 
 inline std::vector<std::string> getAsmFiles(const std::string &Path, const std::string &binDirPath);
+lbl::Labels do_first_pass(std::ifstream& file);

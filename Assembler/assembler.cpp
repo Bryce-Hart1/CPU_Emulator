@@ -1,5 +1,6 @@
 #include "assembler.hpp"
 #include "labels.hpp"
+#include <string>
 
 // tokenize a single line
 std::vector<std::string> tokenize(const std::string& line) {
@@ -12,10 +13,50 @@ std::vector<std::string> tokenize(const std::string& line) {
     return tokens;
 }
 
-void do_first_pass(const std::ifstream& file){
-    using namespace lbl;
-    Labels labels_so_far = Labels();
-    //TODO: finish this
+std::size_t new_bytes_at(std::size_t& currentByteAt, std::vector<std::string> tokens){
+    using namespace std;
+    using namespace terminal;
+
+    if(!tokens.empty()){
+    InstrType howManyBytes = Instruction_Types.at(tokens[0]);
+
+    switch(howManyBytes){
+        case InstrType::BASIC:
+            return (currentByteAt+1);
+        case InstrType::ARITH:
+        case InstrType::DATA_MOV:
+            return(currentByteAt + 2);
+        case InstrType::LOAD_JUMP:
+            return(currentByteAt + 3);
+        default:
+            cout << "Non valid syntax at byte " << numberOfBytesProcessed << endl;
+        break;
+        return currentByteAt;
+    }
+    }
+    return currentByteAt; //line was empty
+}
+
+lbl::Labels do_first_pass(std::ifstream& file){
+    using namespace std;
+    using namespace terminal;
+    string line; //current line
+    lbl::Labels labels_so_far = lbl::Labels();
+        while (getline(file, line)) {
+            if(lbl::is_labelTg_valid(line)){ //is a label, continue
+                string labelName = lbl::extract_label_name(line);
+                labels_so_far.add_new_label(labelName, static_cast<u16>(numberOfBytesProcessed));
+            }else{ //normal line increment bits. Also will catch bad syntax
+                if (!line.empty() || line[0] != '#'){//if line is blank or a comment
+                    std::string strippedStr = line.substr(0, line.find('#'));
+                    auto tokens = tokenize(strippedStr);
+
+                    if(!strippedStr.empty()){// was a full-line comment or blank
+                        numberOfBytesProcessed = new_bytes_at(numberOfBytesProcessed, tokens);
+                    }//if no tokens
+                }//if line not empty
+            }
+        }   
 }
 
 /**
