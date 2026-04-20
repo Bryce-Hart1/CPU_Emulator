@@ -25,7 +25,7 @@
 #include "labels.hpp"
 
 
-inline const std::string &asmPostfix = "em";  // choose the type of file that ASM will be read from
+inline const std::string &asmPostfix = ".em";  // choose the type of file that ASM will be read from
 inline const std::string &binPostfix = ".b"; // choose the type of file that "binary" will write to. include dot for now
 
 inline const std::string &asmDir = "asm"; //names of directory
@@ -43,7 +43,7 @@ inline std::array<_bytestr, TOTAL_NUM_OF_INSTRUCTIONS> BinaryMatch_Set;
 inline std::size_t binMatchItr = 0;
 inline std::map<std::string, _bytestr> Instruction_Key; // actual hashmap of each instruction
 
-
+lbl::Labels found_labels; //found labels in the EM. 
 
 enum class InstrType
 {
@@ -53,29 +53,16 @@ enum class InstrType
     LOAD_JUMP
 };
 
-//returns a signed byteStr
-inline _bytestr int_to_byteStr(int convert){
-    _bytestr rtn;
-    rtn.at(0) = (convert < 0) ? '1' : '0';
-    convert = std::abs(convert) % 128;
-    int div = 64;
-    for(int i = 1; i < 8; i++){    
-        if(convert >= div){            
-            rtn.at(i) = '1';
-            convert -= div; 
-        }else{
-            rtn.at(i) = '0';
-        }
-        div /= 2;
-    }
-    return rtn;
-}
+
+
+
 /**
  * gets reg as a full byte, has its respective overload that converts one reg
+ * If there is only one key passed in. It will exist at top (R1)
  */
-inline _bytestr getRegisterKey(std::string R1, std::string R2){
+inline bytestr getRegisterKey(std::string R1, std::string R2){
     std::string byte = "";
-    _bytestr r;
+    bytestr r;
     std::map<std::string, std::string> Register_Key = {
     {"R0", "0000"}, {"R1", "0001"}, {"R2", "0010"}, {"R3", "0011"}, {"R4", "0100"}, {"R5", "0101"}, {"R6", "0110"}, {"R7", "0111"}, {"R8", "1000"},
     {"R9", "1001"}, {"R10", "1010"}, {"R11", "1011"}, {"R12", "1100"}, {"R13", "1101"}, {"R14", "1110"}, {"R15", "1111"}, {"0000", "0000"}};
@@ -88,13 +75,13 @@ inline _bytestr getRegisterKey(std::string R1, std::string R2){
     }
 
     for(int i = 0; i < 8 && i < byte.size(); i++){
-        r.at(i) = byte.at(i);
+        r.change(i, byte.at(i));
     }
 
     return r;
 }
 
-inline _bytestr getRegisterKey(std::string R1){
+inline bytestr getRegisterKey(std::string R1){
     return getRegisterKey(R1, "0000");
 }
 

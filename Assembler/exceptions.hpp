@@ -1,5 +1,6 @@
 #include <exception>
 #include <vector>
+#include "bytestr.hpp"
 
 #pragma once
 
@@ -9,8 +10,7 @@ namespace fs = std::filesystem;
 using i8 = int8_t; // for instruction set
 using usi8 = uint8_t;
 using _byte = std::bitset<8>; // a bitset<8> namespace
-using _bytestr = std::array<char, 8>;
-
+using _bytestr = std::array<char, 8>;// not class obj, static array
 namespace terminal{
     std::size_t numberOfBytesProcessed = 0;
     std::size_t atLine = 0;
@@ -52,5 +52,9 @@ namespace terminal{
     void addIntegralOutOfRange(Type incomingNumber){
         _warnings.push_back(wrnMes + "Number converted " + std::to_string(incomingNumber) + " is not translatable to 8 bytes ");
 
+    }
+    void programLargerThanMaxSize(const std::size_t& bytes_larger){
+        _errors.push_back(errMes + "Program is " + std::to_string(bytes_larger) + 
+        " larger than the max offset of allowed bytes. Please refer docs");
     }
 }

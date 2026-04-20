@@ -14,7 +14,6 @@ namespace lbl{
         public:
 
         Labels(){
-            list_of_labels;
             next_label_at_byte_off = 0;
         }
         void add_new_label(const std::string& name, const u16& byte){
@@ -71,7 +70,7 @@ namespace lbl{
         if(line.size() == labelTg.size()){
             terminal::expectedLabel(); //rest of string is blank!
         }
-        return line.substr(labelTg.size() - 1);
+        return line.substr(labelTg.size());
     }
     
 
