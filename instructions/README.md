@@ -1,12 +1,35 @@
-src/main.rs           ← handles native vs web entry points, don't touch
-src/lib.rs            ← wires main.rs to app.rs for wasm, don't touch
-.github/workflows/    ← CI/CD for packaging and GitHub Pages, keep it
-assets/sw.js          ← service worker for web builds, keep it
-index.html            ← web shell, keep it (just rename eframe_template → your crate name)
-Cargo.toml            ← keep structure, just edit the metadata fields
-rust-toolchain.toml   ← pins your Rust version, keep it
-Trunk.toml            ← web build config, keep it
 
 
 
-compile assembler with g++ -std=c++26 -o assembler assembler.cpp
+## Assembler
+
+compile assembler with 
+```
+g++ -std=c++26 -o assembler assembler.cpp
+```
+
+
+
+s
+## CPU
+-----------------------------------------------------------------
+This CPU has 
+
+## RAM 
+-----------------------------------------------------------------
+gives the user 256 2^8 ram cells that are all u32 2^32
+
+
+
+## Screen 
+-----------------------------------------------------------------
+
+
+
+## disk (hard drive)
+-----------------------------------------------------------------
+
+gives the user 2^16 (65536)hard drive cells to store programs. Each cell is 1 byte.
+To get direct access to the memory, in the instruction set exists:
+INT 
+
