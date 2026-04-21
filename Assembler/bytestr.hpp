@@ -16,6 +16,9 @@ class bytestr{
     bytestr(int unsignedInt) : bytestr() {
         int_to_un(unsignedInt);
     }
+    bytestr(const std::string& inputStr) : bytestr() {
+        string_to(inputStr);
+    }
 
     void change(int n, bool v){
         if(n > 7 || n < 0) return;
@@ -67,17 +70,21 @@ class bytestr{
     void string_to(const std::string& input){
         if(input.size() > 8)
             return;
-            
+
         int itr = 7;
-        std::reverse(input.begin(), input.end());
+
         // 1011, start from adding smallest
-        for(char chr : input){
-            if(chr == '1'){
-                _bits.at(itr) == '1';
+        for(int i = input.size()-1; 0 <= i; i++){
+            if(input.at(i) == '1'){
+                this->change(itr, '1');
             }else{
-                _bits.at(itr) = '0';
+                this->change(itr, '0');
+            }
+            if(itr == 0){
+                break;
             }
             itr--;
+
         }
         return;
     }

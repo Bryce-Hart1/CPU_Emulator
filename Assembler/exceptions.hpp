@@ -13,7 +13,7 @@ using _byte = std::bitset<8>; // a bitset<8> namespace
 using _bytestr = std::array<char, 8>;// not class obj, static array
 namespace terminal{
     std::size_t numberOfBytesProcessed = 0;
-    std::size_t atLine = 0;
+    std::size_t atLine = 1; //line starts at 1 not zero
     std::vector<std::string> _warnings;
     std::vector<std::string> _errors;
     const std::string& wrnMes = "[warning]: "; //comes with a space after
@@ -24,8 +24,11 @@ namespace terminal{
     void incrementLineWorkingOn(){
         atLine++;
     }
+    std::string _at(const std::size_t& atLine){
+        return (atLinMsg + std::to_string(atLine) + ' ');
+    }
     void SyntaxError(const std::string& parsed){
-        _errors.push_back(errMes + atLinMsg + std::to_string(atLine) + parsed + " is not valid syntax");
+        _errors.push_back(errMes + _at(atLine) + parsed + " is not valid syntax");
     }
     void AddressOutOfRange(int address){
         _errors.push_back(errMes + atLinMsg + std::to_string(atLine) + std::to_string(address) + "is out of range");
@@ -56,5 +59,28 @@ namespace terminal{
     void programLargerThanMaxSize(const std::size_t& bytes_larger){
         _errors.push_back(errMes + "Program is " + std::to_string(bytes_larger) + 
         " larger than the max offset of allowed bytes. Please refer docs");
+    }
+    
+    namespace intern{ //internal errors, to help with debugging. Working version should never display these
+        //internal str_to_half throws
+        const std::string i = "INTERNAL: ";
+        void str_to_half(){
+            std::cout << i << "INVALID SIZE INTAKE IN STR_TO_HALF HELPER";
+        }
+    }
+}
+
+
+namespace help{
+    //takes first 4 of string and outputs as array
+    inline std::array<char, 4> str_to_half_bytestr(const std::string& input){
+        std::array<char, 4> rtn = {'0', '0', '0', '0'};
+        if(input.size() < 4){
+            terminal::intern::str_to_half();
+            return rtn;
+        }
+        for(int i = 0; i < 4; i++)
+            rtn.at(i) = input.at(i);
+        return rtn;
     }
 }

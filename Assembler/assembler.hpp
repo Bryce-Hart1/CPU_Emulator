@@ -163,8 +163,8 @@ inline std::map<std::string, InstrType> Instruction_Types = {
     {"CALL", InstrType::LOAD_JUMP},
     {"JMPIFCRRY", InstrType::LOAD_JUMP},
     {"JMPIFAULT", InstrType::LOAD_JUMP},
-    {"LOAD", InstrType::DATA_MOV},
-    {"STORE", InstrType::DATA_MOV},
+    {"LOAD", InstrType::LOAD_JUMP},
+    {"STORE", InstrType::LOAD_JUMP},
 };
 
 // see ASM_Instructions.md for explainations

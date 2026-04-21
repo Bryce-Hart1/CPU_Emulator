@@ -25,11 +25,19 @@ namespace lbl{
          */
         std::string label_to_12_bits(const std::string& name){
             const u16 MAX_BYTES = 4095; //if the program is over 4095 lines long, there will be no label to jump to
-            int at = list_of_labels.at(name);
-            if(at > MAX_BYTES){
-                terminal::labelOutOfRange(name);
+            int at;
+            try{
+                at = list_of_labels.at(name);
+                if(at > MAX_BYTES){
+                    terminal::labelOutOfRange(name);
+                    return "000000000000";
+                }
+            }catch(const std::exception& e){
+                std::cerr << e.what() << std::endl;
+                std::cout << "tried to reach label that does not exist" << std::endl;
                 return "000000000000";
             }
+
             /**
              * The program will never process a number larger then 4095, which is the largest
              * unsigned 12 bit number

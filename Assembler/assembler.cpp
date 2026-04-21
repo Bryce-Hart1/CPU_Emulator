@@ -67,25 +67,44 @@ lbl::Labels do_first_pass(std::ifstream& file){
 void three_byte_instructions(const std::string& token_2, const std::string& token_3,
     std::vector<_bytestr>& binFile, const std::string& whatIsInstr){
 
-    std::string rtnString;
-    bytestr byte2 = bytestr();
+    bytestr byte2;
+
     if(whatIsInstr == "LOADIMM"){
-        byte2.set_half(true, getRegisterKey(token_2).get_half(true)); //set top half of byte to register
+        // byte2: [reg(4) | top 4 bits of 12-bit immediate]
+        // byte3: [bottom 8 bits of 12-bit immediate]
+        byte2.set_half(true, getRegisterKey(token_2).get_half(true));
         int loadThis = hex_to_int(token_3);
         int div = 2048;
         for(int i = 0; i < 4; i++){
-            if(loadThis / div == 1){
-                byte2.change(i+4, '1');
-            }else{
-                byte2.change(i+4, '0');
-            }
+            byte2.change(i+4, loadThis / div >= 1 ? '1' : '0');
             div /= 2;
         }
-        binFile.push_back(byte2.get_obj()); //byte 2
-        loadThis %= 256; //div so that way we are working with bottom 8 bytes
-        bytestr byte3 = bytestr();
-        byte3.int_to_un(loadThis);
-        binFile.push_back(byte3.get_obj()); //and byte 3
+        binFile.push_back(byte2.get_obj());
+        bytestr byte3;
+        byte3.int_to_un(loadThis % 256);
+        binFile.push_back(byte3.get_obj());
+
+    } else if(whatIsInstr == "LOAD" || whatIsInstr == "STORE"){
+        // byte2: [reg(4) | 0000]
+        // byte3: 8-bit RAM address
+        byte2.set_half(true,  getRegisterKey(token_2).get_half(true));
+        byte2.set_half(false, {'0','0','0','0'});
+        binFile.push_back(byte2.get_obj());
+        binFile.push_back(getTranslatedAddress(token_3));
+
+    } else if(whatIsInstr == "JMP"     || whatIsInstr == "JMPIF0"    || whatIsInstr == "JMPIF!0" 
+         || whatIsInstr == "JMPIFCRRY" ||  whatIsInstr == "JMPIFAULT"){
+        // byte2: [0000 | top 4 bits of 12-bit address]
+        // byte3: [bottom 8 bits of 12-bit address]
+        // token_2 IS the label name — pure jumps have no register
+        std::string addr = found_labels.label_to_12_bits(token_2);
+        byte2.set_half(true,  {'0','0','0','0'});
+        byte2.set_half(false, help::str_to_half_bytestr(addr.substr(0, 4)));
+        bytestr byte3;
+        for(int i = 0; i < 8; i++)
+            byte3.change(i, addr.at(4 + i));
+        binFile.push_back(byte2.get_obj());
+        binFile.push_back(byte3.get_obj());
     }
 }
 
@@ -95,6 +114,10 @@ void three_byte_instructions(const std::string& token_2, const std::string& toke
 void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
     //if line is blank or a comment
     if (line.empty() || line[0] == '#'){
+        return;
+    }
+    //if its a label dont count it
+    if (lbl::is_labelTg_valid(line)){
         return;
     }
     //if there is no tokens on this line
@@ -150,14 +173,11 @@ void assembleHelper(const std::string& line, std::vector<_bytestr>& binFile){
         }
 
     }else if (type == InstrType::LOAD_JUMP) {
-        // 3 bytes — opcode, [R1 | 0000], address
-        if (tokens.size() < 3){
-        //throw error?
-            return;
-        }
-        binFile.push_back(getNextInstruction(mnemonic)); //byte 1
-        three_byte_instructions(tokens.at(2), tokens.at(3), binFile, mnemonic);
-
+        if (tokens.size() < 2) return; // need at least opcode + 1 argument
+        binFile.push_back(getNextInstruction(mnemonic)); // byte 1
+        std::string t2 = tokens.at(1);// reg or label
+        std::string t3 = tokens.size() > 2 ? tokens.at(2) : "";// immediate/addr, empty for pure jumps
+        three_byte_instructions(t2, t3, binFile, mnemonic);
         }
 }
 
@@ -182,14 +202,16 @@ void assemble(const std::string& filePath){
             assembleHelper(line, binFile);
             terminal::incrementLineWorkingOn();
         }
+        int bytes_at_output_line = 0; //amount of bytes on this line
         for(std::size_t i = 0; i < (binFile.size()); i++){
             _bytestr translate = binFile.at(i);
             for(int j = 0; j < 8; j++){
                 outputFile << translate.at(j);
             }// one byte
-            //my thinking ~150 characters 150 / 8 = 18ish bytes
-            if(i % 18 == 0 && i != 0){
+            bytes_at_output_line++;
+            if(bytes_at_output_line == 17){
                 outputFile << '\n'; //newline to div up
+                bytes_at_output_line = 0;
             }
         }
         inputFile.close();
