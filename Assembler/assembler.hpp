@@ -34,7 +34,7 @@ inline const int MAX_Instr_Size = 256;
 inline const int nOfBasics = 4;
 inline const int nOfArith = 8;
 inline const int nOfDataMvm = 7;
-inline const int nOfLoadAndJump = 7;
+inline const int nOfLoadAndJump = 6;
 inline const int TOTAL_NUM_OF_INSTRUCTIONS = (nOfBasics + nOfArith + nOfDataMvm + nOfLoadAndJump);
 
 // for instruction set
@@ -56,10 +56,9 @@ enum class InstrType
 
 
 
-/**
- * gets reg as a full byte, has its respective overload that converts one reg
- * If there is only one key passed in. It will exist at top (R1)
- */
+
+//gets reg as a full byte, has its respective overload that converts one reg
+ //If there is only one key passed in. It will exist at top (R1)
 inline bytestr getRegisterKey(std::string R1, std::string R2){
     std::string byte = "";
     bytestr r;
@@ -73,14 +72,15 @@ inline bytestr getRegisterKey(std::string R1, std::string R2){
     }catch(const std::exception& e){
         terminal::SyntaxError(R1);
     }
-
+    //
     for(int i = 0; i < 8 && i < byte.size(); i++){
         r.change(i, byte.at(i));
     }
 
     return r;
 }
-
+//gets reg as a full byte, has its respective overload that converts one reg
+ //If there is only one key passed in. It will exist at top (R1)
 inline bytestr getRegisterKey(std::string R1){
     return getRegisterKey(R1, "0000");
 }
@@ -162,7 +162,6 @@ inline std::map<std::string, InstrType> Instruction_Types = {
     {"JMPIF!0", InstrType::LOAD_JUMP},
     {"CALL", InstrType::LOAD_JUMP},
     {"JMPIFCRRY", InstrType::LOAD_JUMP},
-    {"JMPIFAULT", InstrType::LOAD_JUMP},
     {"LOAD", InstrType::LOAD_JUMP},
     {"STORE", InstrType::LOAD_JUMP},
 };
@@ -229,44 +228,14 @@ inline void defineInstructions(std::array<std::string, TOTAL_NUM_OF_INSTRUCTIONS
     addBinInstruction("1000:0100");
     arr.at(23) = "JMPIFCRRY";
     addBinInstruction("1000:0101");
-    arr.at(24) = "JMPIFAULT";
-    addBinInstruction("1000:0110");
-    //interupt (2 bytes)
-    arr.at(25) = "INT";
+    //interrupt (2 bytes)
+    arr.at(24) = "INT";
     addBinInstruction("0100:1100");
 
 }
 
 
 
-//We could just type cast into bitset, but I would rather tell the user that there is an
-//error
-template <std::integral T>
-std::optional<_bytestr> getNumberConversion(T incomingNumber) {
-    using namespace terminal;
-    if (incomingNumber > 127 || incomingNumber < -128) {
-        terminal::addIntegralOutOfRange(incomingNumber); //warning for now
-        return terminal::emptyByteStr;
-    }
-    _bytestr r;
-    int n = (static_cast<int>(incomingNumber));
-    if(n < 0){
-        r.at(0) = '1';
-        n = std::abs(n);
-    }
-    int thisBit= 64;
-    for(int i = 1; i < 8; i++){
-        if(n >= thisBit){
-            n %= thisBit;
-            r.at(i) = '1';
-        }else{
-            r.at(i) = '0';
-        }
-        thisBit /= 2;
-    }
-    return r;
-}
-    
 
 inline _bytestr getNextInstruction(const std::string &instruction){
     return Instruction_Key.at(instruction);
