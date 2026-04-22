@@ -73,8 +73,7 @@ class bytestr{
 
         int itr = 7;
 
-        // 1011, start from adding smallest
-        for(int i = input.size()-1; 0 <= i; i++){
+        for(int i = input.size()-1; 0 <= i; i--){  // i-- not i++
             if(input.at(i) == '1'){
                 this->change(itr, '1');
             }else{
@@ -84,9 +83,7 @@ class bytestr{
                 break;
             }
             itr--;
-
         }
-        return;
     }
 
     

@@ -83,4 +83,32 @@ namespace help{
             rtn.at(i) = input.at(i);
         return rtn;
     }
+    //We could just type cast into bitset, but I would rather tell the user that there is an
+    //error
+    template <std::integral T>
+    std::optional<_bytestr> getNumberConversion(T incomingNumber) {
+        using namespace terminal;
+        if (incomingNumber > 127 || incomingNumber < -128) {
+            terminal::addIntegralOutOfRange(incomingNumber); //warning for now
+            return terminal::emptyByteStr;
+        }
+        _bytestr r;
+        int n = (static_cast<int>(incomingNumber));
+        if(n < 0){
+            r.at(0) = '1';
+            n = std::abs(n);
+        }
+        int thisBit= 64;
+        for(int i = 1; i < 8; i++){
+            if(n >= thisBit){
+                n %= thisBit;
+                r.at(i) = '1';
+            }else{
+                r.at(i) = '0';
+            }
+            thisBit /= 2;
+        }
+        return r;
+    }
+    
 }

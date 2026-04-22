@@ -16,14 +16,18 @@ namespace lbl{
         Labels(){
             next_label_at_byte_off = 0;
         }
-        void add_new_label(const std::string& name, const u16& byte){
-            list_of_labels.insert({name, byte});
+        void add_new_label(const std::string& name, const u16& byte_Offset){
+            list_of_labels.insert({name, byte_Offset});
         }
         /**
          * Current CPU design allows for a max size of 12 bytes for a possible jump opcode, considering the space
          * for the reg to compare.
          */
-        std::string label_to_12_bits(const std::string& name){
+        std::size_t size_of(){
+            return list_of_labels.size();
+        }
+
+        std::string to_12_bits(const std::string& name){
             const u16 MAX_BYTES = 4095; //if the program is over 4095 lines long, there will be no label to jump to
             int at;
             try{

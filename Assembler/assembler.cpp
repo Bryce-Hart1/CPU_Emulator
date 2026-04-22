@@ -2,7 +2,7 @@
 #include "labels.hpp"
 #include <string>
 
-// tokenize a single line
+// tokenize a single line. Returns strings of words followed by spaces
 std::vector<std::string> tokenize(const std::string& line) {
     std::vector<std::string> tokens;
     std::istringstream stream(line);
@@ -18,23 +18,24 @@ std::size_t new_bytes_at(std::size_t& currentByteAt, std::vector<std::string> to
     using namespace terminal;
 
     if(!tokens.empty()){
-    InstrType howManyBytes = Instruction_Types.at(tokens[0]);
+        auto it = Instruction_Types.find(tokens[0]);
+        if(it == Instruction_Types.end()){
+            terminal::SyntaxError(tokens[0]);
+            return currentByteAt; // don't crash, just skip
+        }
+        InstrType howManyBytes = it->second;
 
-    switch(howManyBytes){
-        case InstrType::BASIC:
-            return (currentByteAt+1);
-        case InstrType::ARITH:
-        case InstrType::DATA_MOV:
-            return(currentByteAt + 2);
-        case InstrType::LOAD_JUMP:
-            return(currentByteAt + 3);
-        default:
-            cout << "Non valid syntax at byte " << numberOfBytesProcessed << endl;
-        break;
-        return currentByteAt;
+        switch(howManyBytes){
+            case InstrType::BASIC:    return (currentByteAt + 1);
+            case InstrType::ARITH:
+            case InstrType::DATA_MOV: return (currentByteAt + 2);
+            case InstrType::LOAD_JUMP: return (currentByteAt + 3);
+            default:
+                cout << "Non valid syntax at byte " << numberOfBytesProcessed << endl;
+                return currentByteAt;
+        }
     }
-    }
-    return currentByteAt; //line was empty
+    return currentByteAt;
 }
 
 lbl::Labels do_first_pass(std::ifstream& file){
@@ -66,24 +67,22 @@ lbl::Labels do_first_pass(std::ifstream& file){
 //abstract the last 2 of the three bytes. should add 2 bytes to the binary
 void three_byte_instructions(const std::string& token_2, const std::string& token_3,
     std::vector<_bytestr>& binFile, const std::string& whatIsInstr){
-
     bytestr byte2;
-
+    bytestr byte3;
     if(whatIsInstr == "LOADIMM"){
         // byte2: [reg(4) | top 4 bits of 12-bit immediate]
         // byte3: [bottom 8 bits of 12-bit immediate]
-        byte2.set_half(true, getRegisterKey(token_2).get_half(true));
-        int loadThis = hex_to_int(token_3);
+        byte2.set_half(true, getRegisterKey(token_2).get_half(true)); //set top half to reg
+        int loadThis = hex_to_int(token_3); 
         int div = 2048;
         for(int i = 0; i < 4; i++){
-            byte2.change(i+4, loadThis / div >= 1 ? '1' : '0');
+            byte2.change(i+4, loadThis / div >= 1 ? '1' : '0'); //set rest to number
             div /= 2;
         }
         binFile.push_back(byte2.get_obj());
-        bytestr byte3;
         byte3.int_to_un(loadThis % 256);
         binFile.push_back(byte3.get_obj());
-
+        return;
     } else if(whatIsInstr == "LOAD" || whatIsInstr == "STORE"){
         // byte2: [reg(4) | 0000]
         // byte3: 8-bit RAM address
@@ -91,20 +90,31 @@ void three_byte_instructions(const std::string& token_2, const std::string& toke
         byte2.set_half(false, {'0','0','0','0'});
         binFile.push_back(byte2.get_obj());
         binFile.push_back(getTranslatedAddress(token_3));
-
+        return;
     } else if(whatIsInstr == "JMP"     || whatIsInstr == "JMPIF0"    || whatIsInstr == "JMPIF!0" 
-         || whatIsInstr == "JMPIFCRRY" ||  whatIsInstr == "JMPIFAULT"){
+         || whatIsInstr == "JMPIFCRRY" || whatIsInstr == "CALL"){
         // byte2: [0000 | top 4 bits of 12-bit address]
         // byte3: [bottom 8 bits of 12-bit address]
         // token_2 IS the label name — pure jumps have no register
-        std::string addr = found_labels.label_to_12_bits(token_2);
-        byte2.set_half(true,  {'0','0','0','0'});
+        if(whatIsInstr == "JMP" || whatIsInstr == "CALL"){
+            std::string addr = found_labels.to_12_bits(token_2);
+            //ignore instruction 3 bc its empty anyway
+            byte2.set_half(1, {0,0,0,0});
+            byte2.set_half(0, help::str_to_half_bytestr(addr.substr(0,4)));
+            byte3 = bytestr(addr.substr(4, 8));
+            binFile.push_back(byte2.get_obj());
+            binFile.push_back(byte3.get_obj());
+        }else{ //is JMPIF0, JMPIF!0, JMPIFCRRY
+        byte2.set_half(true,  getRegisterKey(token_2).get_half(true));
+        std::string addr = found_labels.to_12_bits(token_3);
         byte2.set_half(false, help::str_to_half_bytestr(addr.substr(0, 4)));
-        bytestr byte3;
-        for(int i = 0; i < 8; i++)
-            byte3.change(i, addr.at(4 + i));
+        byte3 = bytestr(addr.substr(4, 8));
         binFile.push_back(byte2.get_obj());
         binFile.push_back(byte3.get_obj());
+        return;
+        }
+    }else{ //its non of these, so throw on whatisintr
+        terminal::SyntaxError(whatIsInstr);
     }
 }
 
@@ -216,8 +226,11 @@ void assemble(const std::string& filePath){
         }
         inputFile.close();
         outputFile.close();
-    }catch(const exception& e){
-        cerr << "Error assembling file: " << e.what() << std::endl;
+    } catch(const std::exception& e) {
+        std::cerr << "Error assembling file: " << e.what() 
+                << " (at line " << terminal::atLine 
+                << ", near byte " << terminal::numberOfBytesProcessed << ")" 
+                << std::endl;
     }
 }
 
