@@ -1,10 +1,17 @@
+#ifndef EXCEPTIONS_HPP
+#define EXCEPTIONS_HPP
+
 #include <exception>
 #include <vector>
+#include <string>
+#include <iostream>
+#include <filesystem>
+#include <bitset>
+#include <optional>
+#include <concepts>
+#include <cstdint>
+#include <cmath>
 #include "bytestr.hpp"
-
-#pragma once
-
-
 
 namespace fs = std::filesystem;
 using i8 = int8_t; // for instruction set
@@ -110,5 +117,7 @@ namespace help{
         }
         return r;
     }
-    
+
 }
+
+#endif // EXCEPTIONS_HPP
