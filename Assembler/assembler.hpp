@@ -5,7 +5,9 @@
  *
  */
 
-#pragma once
+#ifndef ASSEMBLER_HPP
+#define ASSEMBLER_HPP
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -14,14 +16,18 @@
 #include <bitset>
 #include <functional>
 #include <array>
+#include <vector>
 #include <optional>
 #include <limits>
 #include <concepts>
 #include <sstream>
 #include <format>
 #include <cmath>
+#include <cctype>
+#include <cstdint>
 
-#include "exceptions.hpp" 
+#include "bytestr.hpp"
+#include "exceptions.hpp"
 #include "labels.hpp"
 
 
@@ -290,3 +296,5 @@ inline void assemble(const std::string &filePath);
 
 inline std::vector<std::string> getAsmFiles(const std::string &Path, const std::string &binDirPath);
 lbl::Labels do_first_pass(std::ifstream& file);
+
+#endif // ASSEMBLER_HPP
