@@ -690,6 +690,58 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
 
 
 
+    // Register the remaining glyphs. These were all defined above but never inserted, so every
+    // digit, letter and many symbols previously fell through to _unknown_char when looked up.
+    map.insert('%', _precent);
+    map.insert('/', _l_slash);
+    map.insert('0', _zero);
+    map.insert('1', _one);
+    map.insert('2', _two);
+    map.insert('3', _three);
+    map.insert('4', _four);
+    map.insert('5', _five);
+    map.insert('6', _six);
+    map.insert('7', _seven);
+    map.insert('8', _eight);
+    map.insert('9', _nine);
+    map.insert(';', _semicolon);
+    map.insert('<', _greater_than); // holds the ascii 60 '<' glyph (variable is misnamed)
+    map.insert('=', _equals);
+    map.insert('>', _less_than);    // holds the ascii 62 '>' glyph (variable is misnamed)
+    map.insert('?', _question);
+    map.insert('@', _at);
+    map.insert('A', _A);
+    map.insert('B', _B);
+    map.insert('C', _C);
+    map.insert('D', _D);
+    map.insert('E', _E);
+    map.insert('F', _F);
+    map.insert('G', _G);
+    map.insert('H', _H);
+    map.insert('I', _I);
+    map.insert('J', _J);
+    map.insert('K', _K);
+    map.insert('L', _L);
+    map.insert('M', _M);
+    map.insert('N', _N);
+    map.insert('O', _O);
+    map.insert('P', _P);
+    map.insert('Q', _Q);
+    map.insert('R', _R);
+    map.insert('S', _S);
+    map.insert('T', _T);
+    map.insert('U', _U);
+    map.insert('V', _V);
+    map.insert('W', _W);
+    map.insert('X', _X);
+    map.insert('Y', _Y);
+    map.insert('Z', _Z);
+    map.insert('[', _left_bracket);
+    map.insert('\\', _back_slash);
+    map.insert(']', _right_bracket);
+    map.insert('^', _hat);
+    map.insert('_', _underscore);
+
     return map.get(&input)
         .cloned()
         .unwrap_or(_unknown_char)
