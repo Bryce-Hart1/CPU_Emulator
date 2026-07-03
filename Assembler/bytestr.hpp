@@ -1,9 +1,11 @@
+#ifndef BYTESTR_HPP
+#define BYTESTR_HPP
+
 #include <array>
 #include <string>
 #include <algorithm>
 #include <cmath>
 
-#pragma once
 class bytestr{
     private:
     std::array<char, 8> _bits;
@@ -102,3 +104,5 @@ class bytestr{
     }
 
 };
+
+#endif // BYTESTR_HPP
