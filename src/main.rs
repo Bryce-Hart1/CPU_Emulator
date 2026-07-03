@@ -11,7 +11,6 @@ mod bios;
 
 use raylib::prelude::*;
 use raylib::consts::KeyboardKey::*;
-use render::{CpuSnapshot, RamSnapshot};
 
 fn main() {
     let screen_w = 1400i32;
@@ -19,23 +18,17 @@ fn main() {
 
     let (mut rl, thread) = raylib::init()
         .size(screen_w, screen_h)
-        .title("CPU Emulator — Technical View")
+        .title("CPU Emulator")
         .build();
 
     rl.set_target_fps(60);
 
-    let cpu_snap = CpuSnapshot {
-        registers: [0, 42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0],
-        pc:        3,
-        halted:    false,
-        zero:      false,
-        carry:     true,
-        fault:     false,
-    };
+    // Load and run the program (src/bios.txt by default, or a path passed on the command line).
+    // The final CPU / RAM state and anything the program drew to the screen end up in `cam`,
+    // which is the single source the views render from.
+    let mut cam: render::CpuCam = render::CpuCam::new();
+    CPU::cpu::run_program_into(&mut cam);
 
-    CPU::cpu::get_path_and_run(); // from CPU, gets cpu running
-    let mut cam: render::CpuCam = render::CpuCam::new(); //make camera
-    
     //and start
     while !rl.window_should_close() {
         if rl.is_key_down(KeyboardKey::KEY_LEFT_SHIFT) {

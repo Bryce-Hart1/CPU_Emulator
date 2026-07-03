@@ -55,3 +55,27 @@ pub const COLOR_FAULT_GLOW: Color = Color::new(231, 76, 60, SOLID);      // re-e
 pub const COLOR_BORDER: Color = Color::new(0, 130, 160, SOLID);          // panel border
 
 pub const COLOR_HALTED: Color = Color::new(200, 50, 40, SOLID);          // halted banner
+
+// Claude Date 06/19/2026
+// Palette for the "Normal" view — an 80s beige computer sitting on a wooden desk.
+// Same COLOR_<color>_<descriptor> naming convention as the blueprint palette above.
+
+pub const COLOR_WALL_TOP:      Color = Color::new(38, 40, 54, SOLID);    // room wall, upper gradient stop
+pub const COLOR_WALL_BOTTOM:   Color = Color::new(58, 56, 70, SOLID);    // room wall, lower gradient stop
+
+pub const COLOR_DESK_WOOD:     Color = Color::new(120, 78, 44, SOLID);   // desktop surface
+pub const COLOR_DESK_WOOD_DARK:Color = Color::new(92, 58, 32, SOLID);    // desk shadow / grain
+pub const COLOR_DESK_EDGE:     Color = Color::new(150, 100, 60, SOLID);  // lit front lip of desk
+
+pub const COLOR_CRT_BEIGE:       Color = Color::new(214, 201, 162, SOLID); // monitor body
+pub const COLOR_CRT_BEIGE_LIGHT: Color = Color::new(232, 221, 188, SOLID); // top-left highlight
+pub const COLOR_CRT_BEIGE_SHADOW:Color = Color::new(176, 162, 124, SOLID); // bottom/right shading
+pub const COLOR_CRT_VENT:        Color = Color::new(150, 138, 104, SOLID); // vent slots
+
+pub const COLOR_CRT_BEZEL:     Color = Color::new(40, 38, 34, SOLID);    // dark recess around glass
+pub const COLOR_CRT_GLASS_OFF: Color = Color::new(12, 18, 14, SOLID);    // dark CRT glass (powered, no pixels)
+pub const COLOR_CRT_SCANLINE:  Color = Color::new(0, 0, 0, 60);          // translucent scanline overlay
+pub const COLOR_CRT_GLOW:      Color = Color::new(120, 255, 200, 40);    // faint phosphor glow
+
+pub const COLOR_LED_POWER:     Color = Color::new(120, 255, 120, SOLID); // green power LED
+pub const COLOR_KNOB:          Color = Color::new(60, 56, 50, SOLID);    // brightness/contrast knobs

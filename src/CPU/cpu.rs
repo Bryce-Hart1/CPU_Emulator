@@ -5,6 +5,8 @@ use crate::IO::screen;
 use crate::helper;
 use crate::IO;
 use crate::RAM;
+use crate::helper::debug;
+use crate::helper::debug_flag;
 use crate::helper::fallback_starting_operation;
 use crate::render::CpuCam;
 use crate::bios;
@@ -104,7 +106,7 @@ impl ByteStr{
 
 
 struct Registers {
-    r: [u32; 16], // R0 (always 0) through R11 (general purpose)
+    r: [u32; 16],// R0 (always 0) through R11 (general purpose)
                  // R12 = Frame Pointer
                  // R13 = Stack Pointer
                  // R14 = Link Register
@@ -208,7 +210,6 @@ impl InstructionTable {
         map.insert(ByteStr::new("10000011").my_hashed_value(), "JMPIFE0");
         map.insert(ByteStr::new("10000100").my_hashed_value(), "CALL");
         map.insert(ByteStr::new("10000101").my_hashed_value(), "JMPIFCRRY");
-        map.insert(ByteStr::new("10000110").my_hashed_value(), "JMPIFAULT");
         map.insert(ByteStr::new("10000111").my_hashed_value(), "LOAD");
         map.insert(ByteStr::new("10001000").my_hashed_value(), "STORE");
         Self { map }
@@ -244,7 +245,9 @@ impl Cpu {
         if self.pc as usize >= bin_file.len() {
             return None;
         }
-        let byte = ByteStr { bytes: bin_file[self.pc as usize].bytes, my_hash_val: 0};
+        // copy the whole ByteStr so its precomputed hash survives. The opcode table is keyed on
+        // that hash, so zeroing my_hash_val here made every lookup miss and halt immediately.
+        let byte = bin_file[self.pc as usize];
         self.pc = self.pc.wrapping_add(1);
         Some(byte)
 }
@@ -253,27 +256,39 @@ impl Cpu {
      * execution of a single instruction. This does exactly one step. Think that this function
      * must be called over and over again. 
      */
-    fn execute(&mut self, instruction: Option<ByteStr>, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit, cam: &mut CpuCam) {
-
+    fn execute(&mut self, instruction: Option<ByteStr>, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit,
+               cam: &mut CpuCam, screen: &mut IO::screen::Screen, disk: &mut IO::disk::disk) {
+        
+        // guard the debug prints so a None (ran off the end of the program) can't panic here;
+        // the graceful None handling lives in the match below.
+        if let Some(instr) = instruction {
+            debug(debug_flag, &instr.as_string());
+            debug(debug_flag, self.table.lookup(&instr).map(|s| *s).unwrap_or("UNKNOWN"));
+        }
         match instruction {
         None => {
+            // no instruction fetched (ran past the end of the program) — halt instead of
+            // spinning forever in the run loop.
             println!("No instruction to execute.");
+            self.halted = true;
             return;
         }
         Some(instr) => match self.table.lookup(&instr) {
-
         Some(&"NOPERATION") => {
              /* do nothing */ 
             cam.set_last_instr(&"NOPERATION");
+            debug(debug_flag, &"<CPU_EXECUTE> done noperation");
             }
         Some(&"HALT") => {
                 self.halted = true;
-                cam.set_last_instr(&"HALT");
+                cam.set_last_instr(&"<CPU_EXECUTE> HALT");
                 cam.halted = true;
+            debug(debug_flag, &"<CPU_EXECUTE> done halt");
             }
         Some(&"CLRFLAGS") => {
                 self.flags.clear();
                 //update flags if we even render them at all
+            debug(debug_flag, &"<CPU_EXECUTE> done clrflags");
             }
         Some(&"RETURN") => {
             let sp = self.regs.get(13) as u8;
@@ -281,6 +296,7 @@ impl Cpu {
             self.regs.set(13, sp.wrapping_add(1) as u32); // pop move SP back up
             self.pc = return_addr as u8;
             cam.set_last_instr(&"RETURN");
+            debug(debug_flag, &"<CPU_EXECUTE> done return");
         }
 
         //arithmetic and data movement
@@ -288,12 +304,14 @@ impl Cpu {
             let byte2 = self.fetch(bin_file).unwrap();
             let r1: u8 = helper::string_to_u8(byte2.grab_half(true));
             let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
-            let sum: u32 = self.regs.get(r1) + self.regs.get(r2);
-            self.flags.carry = sum > u32::MAX;
+            // overflowing_add avoids a debug-mode panic on wrap and gives us the real carry
+            // (the old `sum > u32::MAX` on a u32 was always false).
+            let (sum, carried) = self.regs.get(r1).overflowing_add(self.regs.get(r2));
+            self.flags.carry = carried;
             self.regs.set(r1, sum);
             cam.reg_set(r1, sum); //display it, only reg one needs updated
             cam.set_last_instr(&"ADD");
-            
+            debug(debug_flag, &"<CPU_EXECUTE> done add");
         }
         Some(&"SUB") => { //might implement underflow here
             let byte2 = self.fetch(bin_file).unwrap();
@@ -302,6 +320,7 @@ impl Cpu {
             let sum: u32 = self.regs.get(r1).wrapping_sub(self.regs.get(r2));
             self.regs.set(r1, sum);
             cam.reg_set(r1, sum);// 2 doesnt change
+            debug(debug_flag, &"<CPU_EXECUTE> done sub");
         }
         Some(&"DIV") => {
             let byte2 = self.fetch(bin_file).unwrap();
@@ -322,11 +341,14 @@ impl Cpu {
             let byte2 = self.fetch(bin_file).unwrap();
             let r1: u8 = helper::string_to_u8(byte2.grab_half(true));
             let r2: u8 = helper::string_to_u8(byte2.grab_half(false));
-            let sum: u32 = self.regs.get(r1) * self.regs.get(r2);
-            self.flags.carry = sum > u32::MAX;
-            self.regs.set(r1, sum);  
+            // overflowing_mul avoids a debug-mode panic on wrap and reports overflow as carry
+            // (the old `sum > u32::MAX` on a u32 was always false).
+            let (sum, carried) = self.regs.get(r1).overflowing_mul(self.regs.get(r2));
+            self.flags.carry = carried;
+            self.regs.set(r1, sum);
             //need to add cam for carry
             cam.reg_set(r1, sum);
+            debug(debug_flag, &"<CPU_EXECUTE> done multi");
  
         }
         Some(&"OR") => {
@@ -339,6 +361,7 @@ impl Cpu {
 
             self.regs.set(r1, sum);
             cam.reg_set(r1, sum);
+            debug(debug_flag, &"<CPU_EXECUTE> done or");
 
         }
         Some(&"AND") => {
@@ -350,6 +373,7 @@ impl Cpu {
             let sum: u32 = val1 & val2;
             self.regs.set(r1, sum);
             cam.reg_set(r1, sum);
+            debug(debug_flag, &"<CPU_EXECUTE> done and");
 
         }
         Some(&"EOR") => { //XOR of 1 and 2 rtn to 1, this has to match the instruction set though
@@ -361,16 +385,18 @@ impl Cpu {
             let sum: u32 = val1 ^ val2;
             self.regs.set(r1, sum);   
             cam.reg_set(r1, sum);
-      
+            debug(debug_flag, &"<CPU_EXECUTE> done !or");
+
         }
         Some(&"NOT") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap();
-            let reg: u8 = helper::string_to_u8(byte2.grab_half(false)); //bottom half is a buffer, per instructions
+            let reg: u8 = helper::string_to_u8(byte2.grab_half(true)); //register is the top nibble, bottom half is a buffer
             let value: String = helper::u32_to_string(self.regs.get(reg));
             let sum = helper::string_to_u32(helper::return_opp_string(value)); //return oppisite in u32
             self.regs.set(reg, sum);
 
             cam.reg_set(reg, sum);
+            debug(debug_flag, &"<CPU_EXECUTE> done not");
 
         }
         Some(&"MOVE") => {
@@ -381,6 +407,8 @@ impl Cpu {
             self.regs.set(r2, move_val);
 
             cam.reg_set(r2, move_val);
+            debug(debug_flag, &"<CPU_EXECUTE> done move");
+
         }
 
         Some(&"MOVEACLR") => { //same case with this one and EOR, just changed a symbol
@@ -393,6 +421,7 @@ impl Cpu {
 
             cam.reg_set(r2, move_val);
             cam.reg_set(r1, self.regs.get(0));
+            debug(debug_flag, &"<CPU_EXECUTE> done move and clear");
 
         }
 
@@ -406,6 +435,7 @@ impl Cpu {
             self.regs.set(13, new_sp as u32);
             ram_unit.write(new_sp, value);
 
+            debug(debug_flag, &"<CPU_EXECUTE> done push");
 
         }
 
@@ -417,14 +447,28 @@ impl Cpu {
             let value = ram_unit.fetch(sp);
             self.regs.set(13, sp.wrapping_add(1) as u32);
             self.regs.set(reg_idx, value as u32);
+            debug(debug_flag, &"<CPU_EXECUTE> done pop");
 
-
+        }
+        Some(&"INT") => {
+            // The second byte selects the interrupt; its arguments come from R1, R2, R3 (per the
+            // ASM spec). Hand off to the bios, which owns the screen / disk side effects.
+            let int_num = self.fetch(bin_file).unwrap().as_u8();
+            let reg1 = self.regs.get(1);
+            let reg2 = self.regs.get(2);
+            let reg3 = self.regs.get(3);
+            bios::call_to_bios(int_num, reg1, reg2, reg3, cam, screen, disk, ram_unit);
+            cam.set_last_instr(&"INT");
+            debug(debug_flag, &"<CPU_EXECUTE> done int");
         }
         //Load and jumps
         Some(&"LOADIMM") => {
             let byte2: ByteStr = self.fetch(bin_file).unwrap(); // get second
-            let top: String = byte2.grab_half(false); // This top half is the reg to load
-            let mut load_imm: String = byte2.grab_half(true); //bottom half is our top bytes!
+            // Assembler layout is [reg(4) | top 4 bits of immediate]; the register is the top
+            // nibble (grab_half(true)) and the immediate's high bits are the bottom nibble. These
+            // two were swapped, so LOADIMM wrote the wrong register with the wrong value.
+            let top: String = byte2.grab_half(true); // top nibble = register to load
+            let mut load_imm: String = byte2.grab_half(false); // bottom nibble = high bits of immediate
             let byte3: ByteStr = self.fetch(bin_file).unwrap(); //get third
             load_imm += &byte3.as_string();
             let load_num: u32 = helper::string_to_u32(load_imm);
@@ -432,27 +476,37 @@ impl Cpu {
 
             self.regs.set(load_reg, load_num);
             cam.reg_set(load_reg, load_num);
+            debug(debug_flag, &"<CPU_EXECUTE> done loadimm");
+
         }
         Some(&"JMP") => {
             let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused for JMP
             let addr     = self.fetch(bin_file).unwrap(); // byte 3 = target address
-            self.pc = addr.hash() as u8;
+            // as_u8 reads the address bits; hash() returned an FNV hash, i.e. a garbage target.
+            self.pc = addr.as_u8();
+            debug(debug_flag, &"<CPU_EXECUTE> done jmp (unconditional)");
+
         }
 
         Some(&"JMPIF0") => { //jump if zero
             let _operand = self.fetch(bin_file).unwrap();
             let addr     = self.fetch(bin_file).unwrap();
             if self.flags.zero {
-                self.pc = addr.hash() as u8;
+                self.pc = addr.as_u8();
             }
+            debug(debug_flag, &"<CPU_EXECUTE> done jmpif0");
         }
 
-        Some(&"JMPIF!0") => { // jump if not zero
+        // opcode 10000011 is "JMPIFE0" in the table; the arm was named "JMPIF!0" so it never
+        // matched and this jump-if-not-zero was silently unreachable.
+        Some(&"JMPIFE0") => { // jump if not zero
             let _operand = self.fetch(bin_file).unwrap();
             let addr     = self.fetch(bin_file).unwrap();
             if !self.flags.zero {
-                self.pc = addr.hash() as u8;
+                self.pc = addr.as_u8();
             }
+            debug(debug_flag, &"<CPU_EXECUTE> done jmp if not 0");
+
         }
         Some(&"CALL") => {
             let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused (padding)
@@ -466,6 +520,8 @@ impl Cpu {
 
             // Now jump
             self.pc = addr.as_u8();
+            debug(debug_flag, &"<CPU_EXECUTE> done call");
+
         }
 
         Some(&"JMPIFCRRY") => {
@@ -474,37 +530,36 @@ impl Cpu {
             if self.flags.carry {
                 self.pc = addr.as_u8();
             }
+            debug(debug_flag, &"<CPU_EXECUTE> done jmp if carry");
+
         }
 
-        Some(&"JMPIFAULT") => {
-            let _operand = self.fetch(bin_file).unwrap(); // byte 2, unused
-            let addr     = self.fetch(bin_file).unwrap(); // byte 3 = target address
-            if self.flags.fault {
-                self.pc = addr.as_u8();
-            }
-        }
         Some(&"LOAD") => {
             let byte2 = self.fetch(bin_file).unwrap();
-            let reg: String = byte2.grab_half(false); //bottom is garbage
+            let reg: String = byte2.grab_half(true); //register is the top nibble, bottom is garbage
             let byte3: ByteStr = self.fetch(bin_file).unwrap();
             let address: u8 = byte3.as_u8();
             let fetched_data: u32 = ram_unit.fetch(address);
             self.regs.set(helper::string_to_u8(reg), fetched_data);
+            debug(debug_flag, &"<CPU_EXECUTE> done load");
+
         }
         Some(&"STORE") => {
             let byte2 = self.fetch(bin_file).unwrap();
-            let reg: String = byte2.grab_half(false); //bottom is garbage
+            let reg: String = byte2.grab_half(true); //register is the top nibble, bottom is padding
             let value_on_bus = self.regs.get(helper::string_to_u8(reg));
             let byte3: ByteStr = self.fetch(bin_file).unwrap();
             let address: u8 = byte3.as_u8();
             ram_unit.write(address,value_on_bus);
+            debug(debug_flag, &"done store");
+
         }     
-        Some(_) => {
-            println!("<CPU_EXECUTE> Unknown instruction, halting.");
+        Some(unknown_instr) => {
+            println!("<CPU_EXECUTE> Unknown instruction,{} halting.", unknown_instr);
             self.halted = true;
         }
         None => {
-            println!("<CPU_EXECUTE> Unrecognized opcode, halting.");
+            println!("<CPU_EXECUTE> Unrecognized opcode (or none), halting.");
             self.halted = true;
         }
             }
@@ -512,14 +567,31 @@ impl Cpu {
         }
     }
 
-    fn run(&mut self, bin_file: &[ByteStr],ram_unit: &mut RAM::ram::RamUnit, cam: &mut CpuCam, screen: &mut IO::screen::Screen){
+    fn run(&mut self, bin_file: &[ByteStr], ram_unit: &mut RAM::ram::RamUnit, cam: &mut CpuCam,
+           screen: &mut IO::screen::Screen, disk: &mut IO::disk::disk){
 
         while !self.halted {
             let next_instruction = self.fetch(bin_file);
-            self.execute(next_instruction, bin_file, ram_unit, cam);
+            self.execute(next_instruction, bin_file, ram_unit, cam, screen, disk);
         }
+        // mirror the final machine state into the render camera. Screen writes were already
+        // applied live as interrupts ran; here we snapshot registers, flags, PC and RAM.
+        self.sync_to_cam(cam, ram_unit);
     }
-        
+
+    // Copy the authoritative CPU + RAM state into the render camera for display.
+    fn sync_to_cam(&self, cam: &mut CpuCam, ram_unit: &RAM::ram::RamUnit) {
+        for i in 0..16u8 {
+            cam.registers[i as usize] = self.regs.get(i);
+        }
+        cam.pc    = self.pc;
+        cam.zero  = self.flags.zero;
+        cam.carry = self.flags.carry;
+        cam.fault = self.flags.fault;
+        cam.halted = self.halted;
+        cam.ram   = ram_unit.snapshot();
+    }
+
 }
 
 /// Convert a flat string of '0'/'1' chars into a Vec<ByteStr>,
@@ -537,20 +609,11 @@ fn chars_to_bytestrs(chars: &[char]) -> Vec<ByteStr> {
         .collect()
 }
 
-/// Entry point: load a binary text file (all '0'/'1'), build the CPU + RAM, run.
-fn run(char_stream: Vec<char>) {
-    let bin_file = chars_to_bytestrs(&char_stream);
-
-    let mut cpu = Cpu::new();
-    let mut ram = RAM::ram::RamUnit::new();
-    let mut cam: CpuCam = CpuCam::new();
-    let mut screen: screen::Screen = screen::Screen::new();
-    cpu.run(&bin_file, &mut ram, &mut cam, &mut screen);
-}
-
-pub fn get_path_and_run(){
+/// Load the program to run: the CLI-supplied path, or src/bios.txt by default, falling back to
+/// the built-in demo program if the file can't be read. Returns the filtered '0'/'1' stream.
+fn load_program_stream() -> Vec<char> {
     let args: Vec<String> = env::args().collect();
-    let path = args.get(1).map(|s| s.as_str()).unwrap_or("program.bin");
+    let path = args.get(1).map(|s| s.as_str()).unwrap_or("src/bios.txt");
 
     // Read the file as raw bytes, keep only '0' and '1' chars
     let char_stream: Vec<char> = fs::read_to_string(path)
@@ -563,12 +626,29 @@ pub fn get_path_and_run(){
         .filter(|c| *c == '0' || *c == '1')   // strip newlines, spaces, etc.
         .collect();
 
-    println!("Loaded {} bits ({} instructions) from '{}'",
+    println!("Loaded {} bits ({} bytes) from '{}'",
         char_stream.len(),
         char_stream.len() / 8,
         path
     );
     println!("{}", "─".repeat(52));
 
-    run(char_stream);
+    char_stream
+}
+
+/// Build the machine, run the loaded program to completion, and leave the resulting state in
+/// `cam` so the renderer shows what the program actually did (screen output, registers, RAM).
+pub fn run_program_into(cam: &mut CpuCam) {
+    let bin_file = chars_to_bytestrs(&load_program_stream());
+
+    let mut cpu = Cpu::new();
+    let mut ram = RAM::ram::RamUnit::new();
+    let mut screen: screen::Screen = screen::Screen::new();
+    let mut disk: IO::disk::disk = IO::disk::disk::new();
+    cpu.run(&bin_file, &mut ram, cam, &mut screen, &mut disk);
+}
+
+pub fn get_path_and_run(){
+    let mut cam = CpuCam::new();
+    run_program_into(&mut cam);
 }

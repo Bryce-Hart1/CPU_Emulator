@@ -1,7 +1,0 @@
-/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/lib/libraylib.a
-/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/include/raylib.h
-/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/include/rlgl.h
-/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/include/raymath.h
-/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/lib/pkgconfig/raylib.pc
-/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/lib/cmake/raylib/raylib-config-version.cmake
-/Users/bryceh23/Desktop/CSCI/git/CPU_Emulator/CPU_Em/target/debug/build/raylib-sys-a4beebcebc5fa448/out/lib/cmake/raylib/raylib-config.cmake

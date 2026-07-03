@@ -13,11 +13,11 @@ g++ -std=c++26 -o assembler assembler.cpp
 s
 ## CPU
 -----------------------------------------------------------------
-This CPU has 
+This CPU has 16 registers, all of them are 32 bits
 
 ## RAM 
 -----------------------------------------------------------------
-gives the user 256 2^8 ram cells that are all u32 2^32
+gives the user 256 2^8 ram cells that are all 32 bits 2^32
 
 
 

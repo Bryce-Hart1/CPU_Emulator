@@ -19,7 +19,12 @@ impl RamUnit{
     //if I give 256, 256 / 16 = 16 - out of bounds
     pub fn write(&mut self, addr : u8, data : u32){
         let row = (addr % 16) as usize;
-        let col = (addr / 16) as usize;   
+        let col = (addr / 16) as usize;
         self.locations[row][col] = data;
+    }
+
+    // Copy of the whole grid for the renderer. Same [row][col] layout the CpuCam expects.
+    pub fn snapshot(&self) -> [[u32; 16]; 16] {
+        self.locations
     }
 }

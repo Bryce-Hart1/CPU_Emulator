@@ -239,6 +239,10 @@ This overrides anything previously drawn, does not reset cursor
 
 ### INT 0C
 ```
+Move where the next draw takes place
+takes 2 inputs:
+R1 x of cursor (modded by 256)
+R2 y of cursor (modded by 256)
 ```
 
 ### INT 0D 
