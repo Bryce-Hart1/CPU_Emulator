@@ -1,10 +1,12 @@
+#ifndef LABELS_HPP
+#define LABELS_HPP
+
 #include <map>
 #include <string>
+#include <cstdint>
 #include "exceptions.hpp"
 
-#pragma once
-
-using u16 = u_int16_t;
+using u16 = std::uint16_t; // u_int16_t is POSIX-only; use the portable <cstdint> type
 namespace lbl{
 
     class Labels{
@@ -84,6 +86,8 @@ namespace lbl{
         }
         return line.substr(labelTg.size());
     }
-    
+
 
 }
+
+#endif // LABELS_HPP
