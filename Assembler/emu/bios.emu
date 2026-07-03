@@ -1,0 +1,54 @@
+#writing this to print "BOOT" on screen for now
+LOADIMM R1 01H #load blue into reg
+INT 0B #fill screen with blue
+LOADIMM R1 44H #load B into R1
+LOADIMM R2 F1H #load color choices, blue for back, white for front
+INT 0A #call interrupt for writing character on B
+LOADIMM R1 4FH #load O into reg1
+LOADIMM R2 F1H #load color choices, blue for back, white for front
+INT 0A #call interrupt on O
+LOADIMM R1 4FH #load O into reg1
+LOADIMM R2 F1H #load color choices, blue for back, white for front
+INT 0A #call interrupt on O
+LOADIMM R1 54H #load T into reg1
+LOADIMM R2 F1H #load color choices, blue for back, white for front
+INT 0A #call interrupt on T
+# ok, boot printed, now lets try to find a program.
+#this is important. we will look for the first 64 bytes. if the second to last value of this
+#first 64 bytes is not 0, then we will continue.
+LOADIMM R1 40H # look at the next 64 bytes
+LOADIMM R2 0H #start reading from the beginning of drive
+LOADIMM R3 0H #start writing at the beginning of ram
+INT 0D #send off
+LOAD R1 3FH #grab the second to last byte, 63
+AND R1 R1 #and from itself, if its zero it will set 0 flag
+JMPIF0 R1 ValidNotFound #if not valid, then we gotta print that it failed
+JMPIF!0 R1 Valid
+label_ValidNotFound
+LOADIMM R1 04H #load red into reg1
+INT 0B
+LOADIMM R1 46H #load F into reg1
+LOADIMM R2 40H #load color choices
+INT 0A #call interrupt on F
+
+LOADIMM R1 40H #load A into reg1
+LOADIMM R2 40H #load color choices
+INT 0A #call interrupt on A
+
+LOADIMM R1 49H #load I into reg1
+LOADIMM R2 40H #load color choices
+INT 0A #call interrupt on I
+
+LOADIMM R1 4CH #load L into reg1
+LOADIMM R2 40H #load color choices
+INT 0A #call interrupt on L
+
+LOADIMM R1 45H #load E into reg1
+LOADIMM R2 40H #load color choices
+INT 0A #call interrupt on E
+
+LOADIMM R1 44H #load D into reg1
+LOADIMM R2 40H #load color choices
+INT 0A #call interrupt on D
+label_Valid
+NOPERATION
