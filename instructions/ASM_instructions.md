@@ -9,8 +9,9 @@ I designed these with a beginner in mind. I want to be able to show anyone this 
 3. Must be as clear as possible
 4. Instruction set must be flexible to be able to do any instruction that a modern CPU can carry out.
 
-# opcode rule
-```
+## opcode rule
+
+```text
 top 2 bytes
 00 1 byte instruction
 01 2 byte instruction
@@ -18,15 +19,19 @@ top 2 bytes
 11 6 byte instructions (Not yet implemented)
 
 ```
-# Registers 
+
+## Registers
+
 See ```Registers.md```
 All 4 bits
 
-# Instructions
+## Instructions
 
 ## Basic (1 byte)
+
 Includes 4 instructions: NOPERATION, HALT, RETURN, CLRFLAGS
-```
+
+```text
 0
 0000 0000 NOPERATION
 -----------------------------------------------
@@ -47,10 +52,14 @@ Return from subroutine pop Program counter off stack
 -----------------------------------------------
 
 Clear all flags
+
 ```
+
 ## Arithmetic (2 bytes)
+
 Includes 8 instructions: ADD, SUB, DIV, MULTI, OR, AND, !OR, NOT
-```
+
+```text
 0100 0000 ADD R1 (4 bits) R2 (4 bits)
 -----------------------------------------------
 
@@ -106,10 +115,11 @@ reverses bits in register 1.
 
 ```
 
-
 ## Data Movement (2 bytes)
+
 Includes 4 instructions: MOVE, MOVE&CLR, LOAD, STORE, PUSH, POP
-```
+
+```text
 0100 1000 MOVE (reg1 (4 bytes)) (reg2 (4 bytes))
 -----------------------------------------------
 moves reg1 TO reg2. does not clear reg1.
@@ -132,7 +142,8 @@ moves reg1 TO reg2. does not clear reg1.
 ```
 
 ## Interrupts (2 bytes)
-```
+
+```text
 0100 1100 INT (interrupt)
 -----------------------------------------------
 Cuts to Interrupt table In the bios. Keep in mind the CPU will only handle 
@@ -147,8 +158,10 @@ INT 0B //takes from keyboard
 INT 0C //move user cursor 
 INT 0D //takes from Disk
 ```
-#### INT 0A
-```
+
+### INT 0A
+
+```text
 looks at R1, R2 for what to do next.
 R1 : Char to write (takes mod of 255)
 R2 : 
@@ -159,8 +172,10 @@ R2 :
 This number will also be modded by 255 to prevent errors
 
 ```
-#### INT 0B 
-```
+
+### INT 0B
+
+```text
 Colors whole screen based on whats found in R1
 
 R1 : (top 3 blank) _ _ _ _ _ _ _ _
@@ -170,83 +185,119 @@ R1 : (top 3 blank) _ _ _ _ _ _ _ _
 This overrides anything previously drawn, does not reset cursor
 
 16 options for each.
+
 ```
+
 ### colors for bios
-#### black 
-```
+
+#### black
+
+```text
 00H
 ```
+
 #### blue
-```
+
+```text
 01H
 ```
+
 #### green
-```
+
+```text
 02H
 ```
+
 #### bright blue (cyan-ish)
-```
+
+```text
 03H
 ```
+
 #### red
-```
+
+```text
 04H
 ```
+
 #### purple
-```
+
+```text
 05H
 ```
+
 #### orange (brown-ish alt)
-```
+
+```text
 06H
 ```
+
 #### white (light gray)
-```
+
+```text
 07H
 ```
+
 #### grey
-```
+
+```text
 08H
 ```
+
 #### bright blue
-```
+
+```text
 09H
 ```
+
 #### bright green
-```
+
+```text
 0AH
 ```
+
 #### bright cyan
-```
+
+```text
 0BH
 ```
+
 #### bright red
-```
+
+```text
 0CH
 ```
+
 #### bright purple
-```
+
+```text
 0DH
 ```
+
 #### yellow
-```
+
+```text
 0EH
 ```
+
 #### bright white
-```
+
+```text
 0FH
 ```
 
 ### INT 0C
-```
+
+```text
 Move where the next draw takes place
 takes 2 inputs:
 R1 x of cursor (modded by 256)
 R2 y of cursor (modded by 256)
 ```
 
-### INT 0D 
-```
+### INT 0D
+
+```text
 Allows for a Interrupt to read from disk.
 Takes a few arguments: 
 Looks at R1, R2, and R3 for what to do next.
@@ -259,19 +310,21 @@ Same as Disk, also 0 based, but keep in mind there is only 256 locations,
 compared to the disks 2^16 (65536) locations.
 *For both, if you write out of bounds, this will cause undefined behavior
 ```
+
 ### INT 0E
-```
+
+```text
 write to disk. Same rules apply from reading.
 R1 How many bytes to transfer from RAM to disk
 R2 location of RAM to read from 
 R3 where to write on disk
 ```
 
-
-
 ## Load and Jumps (3 bytes)
+
 Includes 7 instructions: LOADIMM, JMP, JMPIF0, JMPIF!0, CALL, JMPIFCRRY, JMPIFAULT
-```
+
+```text
 1000 0000 LOADIMM R1 (4 bits ) (12 bit addr)
 -----------------------------------------------
 same as LDI, loads an 12 bit address into R1. This is changed from the legacy design,
@@ -317,12 +370,14 @@ Stores requested value from register into ram at a 8 bit address
 
 ## Long Instructions (not yet implemented) (6 bytes)
 
-
-# ASM rules
 In every doc you see here, I may refer to the assembly files as em (Emulator Machine code) or assembly, or asm. These all mean the same thing.
+
 ## labels
-labels are indicated in lines that begin with 
-``` 
+
+labels are indicated in lines that begin with
+
+``` text
 label_
 ```
+
 these labels can be used to jump to a byte offset in the binary. *However,* if a program is longer then the max offset available in the fixed bit, instruction jumps is only 2^12-1, (4095), or FFF. Any offset larger then this pre designed size will throw an error
