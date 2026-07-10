@@ -31,8 +31,8 @@
 #include "labels.hpp"
 
 
-inline const std::string &asmPostfix = ".em";  // choose the type of file that ASM will be read from
-inline const std::string &binPostfix = ".b"; // choose the type of file that "binary" will write to. include dot for now
+inline const std::string &asmPostfix = ".emu";  // choose the type of file that ASM will be read from
+inline const std::string &binPostfix = ".bstr"; // choose the type of file that "binary" will write to. include dot for now
 
 inline const std::string &asmDir = "asm"; //names of directory
 inline const std::string &binDir = "Bin";

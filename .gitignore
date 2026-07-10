@@ -1,8 +1,6 @@
 .vscode
 # not used
 /Compiler/
-/Assembler/Asm/bios.em
-/Assembler/Asm/sample.em
 /Assembler/assembler
 /Assembler/StrToBin.cpp
 
@@ -12,3 +10,8 @@
 # generated at runtime by the disk unit (see IO/disk.rs)
 diskBin.txt
 
+# emulator editor
+__pycache__
+
+#bin 
+Assembler/assembler
