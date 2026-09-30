@@ -82,7 +82,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
         vec![true],
         vec![true],
         vec![false],
-        vec![false],
+        vec![true],
     ];
     map.insert('!', _expl);
     //ascii 34 5*3 "
@@ -118,7 +118,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     ];    
     map.insert('$', _cash);
     //ascii 37 %
-    let _precent = 
+    let _percent = 
     vec![
     vec![true, false, false, false, true],
     vec![false, false, false, true, false],
@@ -126,6 +126,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, true, false, false, false],
     vec![true, false, false, false, true]    
     ]; 
+    map.insert('%', _percent);
 
     //ascii 38 & 
     //may. change, dont know how readable this is
@@ -203,7 +204,6 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, true],
     vec![true, false]
     ];   
-    map.insert(',', _comma);
 
 
     //ascii 45 - 
@@ -215,7 +215,6 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, false],
     vec![false, false]
     ];   
-    map.insert('-', _minus);
 
 
     //ascii 46 .
@@ -227,16 +226,15 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false],
     vec![true]
     ];   
-    map.insert('.', _period);
 
 
     //ascii 47 /
    let _l_slash = 
     vec![
     vec![false, false, true],
+    vec![false, false, true],
     vec![false, true, false],
-    vec![false, true, false],
-    vec![false, true, false],
+    vec![true, false, false],
     vec![true, false, false]
     ];  
 
@@ -244,11 +242,11 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     //ascii 48 0
     let _zero = 
     vec![
-    vec![true, true, true],
+    vec![false, true, true],
     vec![true, false, true],
     vec![true, false, true],
     vec![true, false, true],
-    vec![true, true, true]
+    vec![true, true, false]
     ];     
 
 
@@ -353,7 +351,6 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![true],
     vec![false]
     ];    
-    map.insert(':', _colon);
 
     //ascii 59 ; semicolon
     let _semicolon = 
@@ -420,6 +417,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     ];
 
 
+    //ascii 66
     let _B = 
     vec![
     vec![true, true, true],
@@ -608,9 +606,9 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     ];   
     let _W = 
     vec![
+    vec![true, false, false, false, true],
     vec![true, false, true, false, true],
     vec![true, false, true, false, true],
-    vec![true, true, false, true, true],
     vec![true, true, false, true, true],
     vec![true, false, false, false, true]
     ];   
@@ -634,7 +632,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     let _Z = 
     vec![
     vec![true, true, true],
-    vec![false, true, true],
+    vec![false, false, true],
     vec![false, true, false],
     vec![true, false, false],
     vec![true, true, true]
@@ -652,11 +650,11 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     //ascii 92
     let _back_slash = 
     vec![
-    vec![true, false],
-    vec![true, false],
-    vec![true, false],
-    vec![false, true],
-    vec![false, true],
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![false, true, false],
+    vec![false, false, true],
+    vec![false, false, true],
     ];     
     //ascii 93
     let _right_bracket = 
@@ -685,6 +683,288 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     vec![false, false, false],
     vec![true, true, true]
     ];     
+
+    // lowercase sits on rows 2-4 with ascenders up to row 0. Letters with a middle stroke
+    // (e, s, z) use rows 1-4, and descenders (g, j, p, q, y) are raised a row so the tail fits.
+    //ascii 96 ` backtick
+    let _backtick = 
+    vec![
+    vec![true, false],
+    vec![false, true],
+    vec![false, false],
+    vec![false, false],
+    vec![false, false]
+    ];
+    //ascii 97 a
+    let _a = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![false, true, true],
+    vec![true, false, true],
+    vec![false, true, true]
+    ];
+    //ascii 98 b
+    let _b = 
+    vec![
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, true, false],
+    vec![true, false, true],
+    vec![true, true, false]
+    ];
+    //ascii 99 c
+    let _c = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![false, true, true],
+    vec![true, false, false],
+    vec![false, true, true]
+    ];
+    //ascii 100 d
+    let _d = 
+    vec![
+    vec![false, false, true],
+    vec![false, false, true],
+    vec![false, true, true],
+    vec![true, false, true],
+    vec![false, true, true]
+    ];
+    //ascii 101 e
+    let _e = 
+    vec![
+    vec![false, false, false],
+    vec![false, true, false],
+    vec![true, true, true],
+    vec![true, false, false],
+    vec![false, true, true]
+    ];
+    //ascii 102 f
+    let _f = 
+    vec![
+    vec![false, true, true],
+    vec![false, true, false],
+    vec![true, true, true],
+    vec![false, true, false],
+    vec![false, true, false]
+    ];
+    //ascii 103 g
+    let _g = 
+    vec![
+    vec![false, false, false],
+    vec![false, true, true],
+    vec![true, false, true],
+    vec![false, true, true],
+    vec![true, true, false]
+    ];
+    //ascii 104 h
+    let _h = 
+    vec![
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, true, false],
+    vec![true, false, true],
+    vec![true, false, true]
+    ];
+    //ascii 105 i
+    let _i = 
+    vec![
+    vec![true],
+    vec![false],
+    vec![true],
+    vec![true],
+    vec![true]
+    ];
+    //ascii 106 j
+    let _j = 
+    vec![
+    vec![false, true],
+    vec![false, false],
+    vec![false, true],
+    vec![false, true],
+    vec![true, false]
+    ];
+    //ascii 107 k
+    let _k = 
+    vec![
+    vec![true, false, false],
+    vec![true, false, false],
+    vec![true, false, true],
+    vec![true, true, false],
+    vec![true, false, true]
+    ];
+    //ascii 108 l
+    let _l = 
+    vec![
+    vec![true, false],
+    vec![true, false],
+    vec![true, false],
+    vec![true, false],
+    vec![false, true]
+    ];
+    //ascii 109 m
+    let _m = 
+    vec![
+    vec![false, false, false, false, false],
+    vec![false, false, false, false, false],
+    vec![true, true, true, true, false],
+    vec![true, false, true, false, true],
+    vec![true, false, true, false, true]
+    ];
+    //ascii 110 n
+    let _n = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![true, true, false],
+    vec![true, false, true],
+    vec![true, false, true]
+    ];
+    //ascii 111 o
+    let _o = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![false, true, false],
+    vec![true, false, true],
+    vec![false, true, false]
+    ];
+    //ascii 112 p
+    let _p = 
+    vec![
+    vec![false, false, false],
+    vec![true, true, false],
+    vec![true, false, true],
+    vec![true, true, false],
+    vec![true, false, false]
+    ];
+    //ascii 113 q
+    let _q = 
+    vec![
+    vec![false, false, false],
+    vec![false, true, true],
+    vec![true, false, true],
+    vec![false, true, true],
+    vec![false, false, true]
+    ];
+    //ascii 114 r
+    let _r = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![false, true, true],
+    vec![true, false, false],
+    vec![true, false, false]
+    ];
+    //ascii 115 s
+    let _s = 
+    vec![
+    vec![false, false, false],
+    vec![false, true, true],
+    vec![true, false, false],
+    vec![false, false, true],
+    vec![true, true, false]
+    ];
+    //ascii 116 t
+    let _t = 
+    vec![
+    vec![false, false, false],
+    vec![false, true, false],
+    vec![true, true, true],
+    vec![false, true, false],
+    vec![false, true, true]
+    ];
+    //ascii 117 u
+    let _u = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![false, true, true]
+    ];
+    //ascii 118 v
+    let _v = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![false, true, false]
+    ];
+    //ascii 119 w
+    let _w = 
+    vec![
+    vec![false, false, false, false, false],
+    vec![false, false, false, false, false],
+    vec![true, false, false, false, true],
+    vec![true, false, true, false, true],
+    vec![false, true, false, true, false]
+    ];
+    //ascii 120 x
+    let _x = 
+    vec![
+    vec![false, false, false],
+    vec![false, false, false],
+    vec![true, false, true],
+    vec![false, true, false],
+    vec![true, false, true]
+    ];
+    //ascii 121 y
+    let _y = 
+    vec![
+    vec![false, false, false],
+    vec![true, false, true],
+    vec![true, false, true],
+    vec![false, true, true],
+    vec![true, true, false]
+    ];
+    //ascii 122 z
+    let _z = 
+    vec![
+    vec![false, false, false],
+    vec![true, true, true],
+    vec![false, true, false],
+    vec![true, false, false],
+    vec![true, true, true]
+    ];
+    //ascii 123 {
+    let _left_brace = 
+    vec![
+    vec![false, true, true],
+    vec![false, true, false],
+    vec![true, true, false],
+    vec![false, true, false],
+    vec![false, true, true]
+    ];
+    //ascii 124 | pipe
+    let _pipe = 
+    vec![
+    vec![true],
+    vec![true],
+    vec![true],
+    vec![true],
+    vec![true]
+    ];
+    //ascii 125 }
+    let _right_brace = 
+    vec![
+    vec![true, true, false],
+    vec![false, true, false],
+    vec![false, true, true],
+    vec![false, true, false],
+    vec![true, true, false]
+    ];
+    //ascii 126 ~ tilde
+    let _tilde = 
+    vec![
+    vec![false, false, false, false],
+    vec![false, true, false, true],
+    vec![true, false, true, false],
+    vec![false, false, false, false],
+    vec![false, false, false, false]
+    ];
     
 
 
@@ -692,7 +972,9 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
 
     // Register the remaining glyphs. These were all defined above but never inserted, so every
     // digit, letter and many symbols previously fell through to _unknown_char when looked up.
-    map.insert('%', _precent);
+    map.insert(',', _comma);
+    map.insert('-', _minus);
+    map.insert('.', _period);
     map.insert('/', _l_slash);
     map.insert('0', _zero);
     map.insert('1', _one);
@@ -704,6 +986,7 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     map.insert('7', _seven);
     map.insert('8', _eight);
     map.insert('9', _nine);
+    map.insert(':', _colon);
     map.insert(';', _semicolon);
     map.insert('<', _greater_than); // holds the ascii 60 '<' glyph (variable is misnamed)
     map.insert('=', _equals);
@@ -741,6 +1024,37 @@ pub fn what_is_char(input: char) -> Vec<Vec<bool>> {
     map.insert(']', _right_bracket);
     map.insert('^', _hat);
     map.insert('_', _underscore);
+    map.insert('`', _backtick);
+    map.insert('a', _a);
+    map.insert('b', _b);
+    map.insert('c', _c);
+    map.insert('d', _d);
+    map.insert('e', _e);
+    map.insert('f', _f);
+    map.insert('g', _g);
+    map.insert('h', _h);
+    map.insert('i', _i);
+    map.insert('j', _j);
+    map.insert('k', _k);
+    map.insert('l', _l);
+    map.insert('m', _m);
+    map.insert('n', _n);
+    map.insert('o', _o);
+    map.insert('p', _p);
+    map.insert('q', _q);
+    map.insert('r', _r);
+    map.insert('s', _s);
+    map.insert('t', _t);
+    map.insert('u', _u);
+    map.insert('v', _v);
+    map.insert('w', _w);
+    map.insert('x', _x);
+    map.insert('y', _y);
+    map.insert('z', _z);
+    map.insert('{', _left_brace);
+    map.insert('|', _pipe);
+    map.insert('}', _right_brace);
+    map.insert('~', _tilde);
 
     return map.get(&input)
         .cloned()
