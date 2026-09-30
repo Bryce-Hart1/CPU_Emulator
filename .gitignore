@@ -3,9 +3,11 @@
 /Compiler/
 /Assembler/assembler
 /Assembler/StrToBin.cpp
+instructions/Emu_extended.md
 
 # build output
 /target/
+Cargo.lock
 
 # generated at runtime by the disk unit (see IO/disk.rs)
 diskBin.txt
