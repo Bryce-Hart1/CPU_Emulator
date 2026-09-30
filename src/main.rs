@@ -23,11 +23,13 @@ fn main() {
 
     rl.set_target_fps(60);
 
-    // Load and run the program (src/bios.txt by default, or a path passed on the command line).
-    // The final CPU / RAM state and anything the program drew to the screen end up in `cam`,
-    // which is the single source the views render from.
+    // Load the program (src/bios.txt by default, or a path passed on the command line). It runs
+    // live inside the loop below, a few instructions per frame as `speed` allows. The CPU / RAM
+    // state and anything the program drew to the screen end up in `cam`, which is the single
+    // source the views render from.
     let mut cam: render::CpuCam = render::CpuCam::new();
-    CPU::cpu::run_program_into(&mut cam);
+    let mut machine = CPU::cpu::Machine::new();
+    let mut speed = CPU::cpu_rate::rate::new();
 
     //and start
     while !rl.window_should_close() {
@@ -41,7 +43,30 @@ fn main() {
             if rl.is_key_pressed(KeyboardKey::KEY_THREE) {
                 cam.screen_on = render::CurrentScreenOn::Normal;
             }
+            if rl.is_key_pressed(KeyboardKey::KEY_P) {
+                speed.pause();
+            }
+            if rl.is_key_pressed(KeyboardKey::KEY_RIGHT) {
+                speed.faster();
+            }
+            if rl.is_key_pressed(KeyboardKey::KEY_LEFT) {
+                speed.slower();
+            }
         }
+
+        // run however many instructions the speed controller allows this frame
+        speed.tick(rl.get_frame_time());
+        let mut steps: u32 = 0;
+        while !machine.is_halted() && speed.isAllowed() && steps < CPU::cpu_rate::rate::MAX_STEPS_PER_FRAME {
+            if steps == 0 {
+                cam.end_frame(); // clear the last instruction's flashes before making new ones
+            }
+            machine.step(&mut cam);
+            speed.step_taken();
+            steps += 1;
+        }
+        cam.paused = speed.is_paused();
+        cam.speed = speed.display();
 
         let mut d = rl.begin_drawing(&thread);
         render::ray_draw_frame(&mut d, &cam, screen_w, screen_h);

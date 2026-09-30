@@ -636,6 +636,44 @@ fn load_program_stream() -> Vec<char> {
     char_stream
 }
 
+/// A loaded program plus everything it runs on, stepped one instruction at a time so the caller
+/// (the render loop, paced by CPU::cpu_rate) decides how fast the CPU goes.
+pub struct Machine {
+    cpu:      Cpu,
+    bin_file: Vec<ByteStr>,
+    ram:      RAM::ram::RamUnit,
+    screen:   screen::Screen,
+    disk:     IO::disk::disk,
+}
+
+impl Machine {
+    /// Load the program (see load_program_stream) into a fresh CPU, RAM, screen and disk.
+    pub fn new() -> Self {
+        Self {
+            cpu:      Cpu::new(),
+            bin_file: chars_to_bytestrs(&load_program_stream()),
+            ram:      RAM::ram::RamUnit::new(),
+            screen:   screen::Screen::new(),
+            disk:     IO::disk::disk::new(),
+        }
+    }
+
+    /// Fetch and execute exactly one instruction, then mirror the new state into `cam`.
+    /// Does nothing once the CPU has halted.
+    pub fn step(&mut self, cam: &mut CpuCam) {
+        if self.cpu.halted {
+            return;
+        }
+        let next_instruction = self.cpu.fetch(&self.bin_file);
+        self.cpu.execute(next_instruction, &self.bin_file, &mut self.ram, cam, &mut self.screen, &mut self.disk);
+        self.cpu.sync_to_cam(cam, &self.ram);
+    }
+
+    pub fn is_halted(&self) -> bool {
+        self.cpu.halted
+    }
+}
+
 /// Build the machine, run the loaded program to completion, and leave the resulting state in
 /// `cam` so the renderer shows what the program actually did (screen output, registers, RAM).
 pub fn run_program_into(cam: &mut CpuCam) {

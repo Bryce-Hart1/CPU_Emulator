@@ -79,3 +79,4 @@ pub const COLOR_CRT_GLOW:      Color = Color::new(120, 255, 200, 40);    // fain
 
 pub const COLOR_LED_POWER:     Color = Color::new(120, 255, 120, SOLID); // green power LED
 pub const COLOR_KNOB:          Color = Color::new(60, 56, 50, SOLID);    // brightness/contrast knobs
+pub const COLOR_PAUSED:        Color = Color::new(240, 180, 40, SOLID);  // amber, CPU paused by the speed control

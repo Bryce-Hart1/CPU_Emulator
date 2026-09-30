@@ -49,9 +49,13 @@ use crate::IO::screen::*;
     pub wire_ram_to_cpu:    bool,
     pub wire_cpu_to_ram:    bool,
 
-    //misc 
+    //misc
     pub screen_on: CurrentScreenOn,
     pub step_just_done: String,
+
+    // speed control (CPU::cpu_rate), copied in by main every frame
+    pub paused: bool,
+    pub speed:  String,   // e.g. "10 instr/s" or "UNLIMITED"
 }
 
 impl CpuCam{
@@ -81,6 +85,9 @@ impl CpuCam{
 
             screen_on: CurrentScreenOn::HalfAndHalf,
             step_just_done: "None".to_string(),
+
+            paused: false,
+            speed:  String::from("---"),
         }
     }
 
@@ -188,6 +195,19 @@ pub fn ray_draw_frame(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_w: i32, 
     }
 }
 
+// Claude Date 09/30/2026
+// Speed readout shared by all three views: the rate picked in CPU::cpu_rate (amber while
+// paused) and the keys that change it.
+fn draw_speed(d: &mut RaylibDrawHandle, camera: &CpuCam, x: i32, y: i32) {
+    let (label, color) = if camera.paused {
+        (format!("PAUSED  ({})", camera.speed), COLOR_PAUSED)
+    } else {
+        (format!("SPEED: {}", camera.speed), COLOR_ACCENT_CYAN)
+    };
+    d.draw_text(&label, x, y, LABEL_FONT, color);
+    d.draw_text("SHIFT+LEFT/RIGHT speed   SHIFT+P pause", x, y + 18, 11, COLOR_LABEL);
+}
+
 
 
 // Techinical
@@ -198,7 +218,7 @@ pub fn ray_draw_frame(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_w: i32, 
 // written but never invoked; the body at the bottom now wires them together.
 fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, screen_height: i32){
 
-    fn draw_header(d: &mut RaylibDrawHandle, screen_w: i32, halted: bool, fault: bool) {
+    fn draw_header(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_w: i32, halted: bool, fault: bool) {
         // Background bar
         d.draw_rectangle(0, 0, screen_w, HEADER_H, COLOR_BG_DEEP);
         d.draw_line(0, HEADER_H - 1, screen_w, HEADER_H - 1, COLOR_BORDER);
@@ -206,11 +226,16 @@ fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, 
         let title = "[ CPU EMULATOR — TECHNICAL VIEW ]";
         d.draw_text(title, PANEL_MARGIN, 14, 18, COLOR_ACCENT_CYAN);
 
+        // Speed readout, left of the status badge
+        draw_speed(d, camera, screen_w - 460, 8);
+
         // Status badge
         let (badge_text, badge_color) = if fault {
             ("● FAULT", COLOR_FAULT_GLOW)
         } else if halted {
             ("● HALTED", COLOR_HALTED)
+        } else if camera.paused {
+            ("● PAUSED", COLOR_PAUSED)
         } else {
             ("● RUNNING", COLOR_CELL_ACTIVE)
         };
@@ -537,7 +562,7 @@ fn draw_technical(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, 
     let snap_ram = camera.as_ram_snapshot();
 
     draw_grid(d, screen_width, screen_height);
-    draw_header(d, screen_width, camera.halted, camera.fault);
+    draw_header(d, camera, screen_width, camera.halted, camera.fault);
 
     let top = HEADER_H + 30;
 
@@ -727,6 +752,7 @@ fn draw_half_and_half(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i
         &format!("LOADED: {}   PC: 0x{:02X}", camera.last_instruction, camera.pc),
         ram_x, info_y, 16, COLOR_ACCENT_CYAN,
     );
+    draw_speed(d, camera, ram_x, info_y + 30);
 }
 
 
@@ -875,6 +901,9 @@ fn draw_normal(d: &mut RaylibDrawHandle, camera: &CpuCam, screen_width: i32, scr
 
     // ── Keyboard on the desk in front of the monitor ─────────────────────────
     draw_keyboard(d, camera, w, h, desk_top, mon_x, mon_w);
+
+    // speed readout up in the corner of the wall, out of the way of the desk scene
+    draw_speed(d, camera, PANEL_MARGIN, PANEL_MARGIN);
 }
 
 // Claude Date 06/19/2026
