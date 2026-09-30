@@ -1,18 +1,17 @@
-#!/usr/bin/env python3
 """
 EM Editor -- a small syntax-highlighting window for writing EM assembly programs.
 
 Follows the grammar defined in instructions/ASM_instructions.md and matched by the
 C++ assembler in Assembler/assembler.hpp:
 
-  * '#' comments            -> green
-  * instructions            -> two colors, split by role:
-                                 - flow/jumps (JMP, JMPIF0, CALL, RETURN ...) one color
-                                 - everything else (ADD, MOVE, LOADIMM, INT ...) another
-  * registers R0-R15        -> a few simple colors:
-                                 - R0            (always 0)          grey
-                                 - R1 - R11      (general purpose)   cyan
-                                 - R12 - R15     (FP/SP/LR/PC)       red
+  * '#' comments-> green
+  * instructions -> two colors, split by role:
+    - flow/jumps (JMP, JMPIF0, CALL, RETURN ...) one color
+    - everything else (ADD, MOVE, LOADIMM, INT ...) another
+  * registers R0-R15 -> a few simple colors:
+    - R0            (always 0)          grey
+    - R1 - R11      (general purpose)   cyan
+    - R12 - R15     (FP/SP/LR/PC)       red
   * labels (label_Name and  -> gold
     bare jump targets)
   * hex immediates (01H ...) -> orange
@@ -43,7 +42,6 @@ for _m in ("LOADIMM", "JMP", "JMPIF0", "JMPIF!0", "CALL", "JMPIFCRRY", "LOAD", "
     INSTR_SIZE[_m] = 3                                   # load/jump (3 bytes)
 
 # Control-flow mnemonics get their own color. JMPIFAULT is documented but not yet
-# assembled -- coloring it helps the user, so it is included here only for display.
 FLOW_INSTR = {"JMP", "JMPIF0", "JMPIF!0", "CALL", "JMPIFCRRY", "JMPIFAULT", "RETURN"}
 ALL_INSTR = set(INSTR_SIZE) | {"JMPIFAULT"}
 OTHER_INSTR = ALL_INSTR - FLOW_INSTR
@@ -106,9 +104,6 @@ def estimate_bytes(text):
         total += INSTR_SIZE.get(mnemonic, 0)
     return total
 
-
-#  Color theme (dark). Green is reserved for comments
-
 THEME = {
     "bg":          "#1e1e1e",
     "fg":          "#d4d4d4",
@@ -121,15 +116,15 @@ THEME = {
 }
 
 TAG_COLORS = {
-    "comment":     "#6A9955",   # green   -- # comments
-    "flow":        "#C678DD",   # purple  -- jumps / control flow
-    "instr":       "#61AFEF",   # blue    -- all other instructions
-    "reg0":        "#7F848E",   # grey    -- R0 (always zero)
-    "reg_gp":      "#56B6C2",   # cyan    -- R1..R11 general purpose
-    "reg_special": "#E06C75",   # red     -- R12..R15 (FP/SP/LR/PC)
-    "label":       "#E5C07B",   # gold    -- label_ definitions
-    "labelref":    "#E5C07B",   # gold    -- bare jump targets
-    "hex":         "#D19A66",   # orange  -- hex immediates
+    "comment":     "#6A9955",
+    "flow":        "#C678DD",
+    "instr":       "#61AFEF",
+    "reg0":        "#A5A8AE",
+    "reg_gp":      "#3AB9CA",
+    "reg_special": "#D9303E",
+    "label":       "#C88B18",
+    "labelref":    "#E5C07B",
+    "hex":         "#E7BD95",
 }
 
 LEGEND = [
