@@ -104,7 +104,7 @@ impl rate{
             _rate,
             _time: TimeDelta::zero(),
             _lastTime: TimeDelta::zero(),
-            _paused: false,
+            _paused: true, // start paused, SHIFT+P begins execution
         };
     }
 
